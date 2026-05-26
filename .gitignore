@@ -1,0 +1,43 @@
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+*.swp
+
+# Environment / secrets — never commit these
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+.env
+.env.*
+secrets.json
+
+# Uploaded files (runtime data, not source)
+FacilityApp.Api/wwwroot/uploads/
+FacilityApp.Api/wwwroot/documents/
+
+# DataProtection keys (runtime)
+keys/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Test results
+TestResults/
+coverage/

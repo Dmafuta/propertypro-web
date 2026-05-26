@@ -1,0 +1,87 @@
+'use client';
+
+import { PropsWithChildren, useState } from 'react';
+import { Box, ButtonBase, Collapse, Stack, SxProps, Typography } from '@mui/material';
+import { useBreakpoints } from 'providers/BreakpointsProvider';
+import IconifyIcon from 'components/base/IconifyIcon';
+
+interface CollapsiblePanelProps {
+  title: string;
+  defaultOpen?: boolean;
+  sx?: SxProps;
+}
+
+const CollapsiblePanel = ({
+  title,
+  children,
+  sx,
+  defaultOpen = false,
+}: PropsWithChildren<CollapsiblePanelProps>) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const { only } = useBreakpoints();
+
+  const onlySm = only('sm');
+
+  const handleToggle = () => setOpen((prev) => !prev);
+
+  return (
+    <Box sx={{ ...sx }}>
+      {onlySm ? (
+        <>
+          <Stack sx={{ py: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: 'text.disabled',
+                textTransform: 'capitalize',
+              }}
+            >
+              {title}
+            </Typography>
+            {children}
+          </Stack>
+        </>
+      ) : (
+        <>
+          <Stack
+            component={ButtonBase}
+            disableRipple
+            onClick={handleToggle}
+            direction="row"
+            sx={{
+              width: 1,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              px: 2,
+              py: 1,
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 700,
+                textTransform: 'capitalize',
+              }}
+            >
+              {title}
+            </Typography>
+            <IconifyIcon
+              icon="material-symbols:keyboard-arrow-down-rounded"
+              fontSize={20}
+              sx={{
+                rotate: open ? '180deg' : '0deg',
+              }}
+            />
+          </Stack>
+
+          <Collapse in={open} unmountOnExit>
+            {children}
+          </Collapse>
+        </>
+      )}
+    </Box>
+  );
+};
+
+export default CollapsiblePanel;

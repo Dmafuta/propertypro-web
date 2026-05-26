@@ -41,3 +41,10 @@ Thumbs.db
 # Test results
 TestResults/
 coverage/
+
+# Next.js frontend
+facility-app-web/node_modules/
+facility-app-web/.next/
+facility-app-web/out/
+facility-app-web/.env.local
+facility-app-web/tsconfig.tsbuildinfo

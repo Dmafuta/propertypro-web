@@ -1,21 +1,23 @@
 import { getSession } from 'next-auth/react';
 import axios from 'axios';
+import { getTenantSlug } from './tenantSlug';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5055') + '/api';
-const TENANT_SLUG = process.env.NEXT_PUBLIC_TENANT_SLUG ?? '';
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  headers: {
-    ...(TENANT_SLUG && { 'X-Tenant-Slug': TENANT_SLUG }),
-  },
 });
 
 axiosInstance.interceptors.request.use(async (config) => {
   const session = await getSession();
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+  // Inject tenant slug dynamically from TenantProvider (set via setTenantSlug)
+  const slug = getTenantSlug();
+  if (slug) {
+    config.headers['X-Tenant-Slug'] = slug;
   }
   return config;
 });

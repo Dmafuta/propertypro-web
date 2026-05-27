@@ -36,7 +36,7 @@ export const demoUser = {
   tenantName: '',
 };
 
-const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG ?? '';
+const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5055';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -44,27 +44,70 @@ export const authOptions: NextAuthOptions = {
       id: 'credentials',
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
+        email:       { label: 'Email',       type: 'text' },
+        password:    { label: 'Password',    type: 'password' },
+        tenantSlug:  { label: 'Tenant Slug', type: 'text' },
+        staffOnly:   { label: 'Staff Only',  type: 'text' },
       },
       async authorize(credentials): Promise<any> {
         if (!credentials) return null;
+        const slug      = credentials.tenantSlug ?? '';
+        const staffOnly = credentials.staffOnly === 'true';
         try {
-          const data: ApiTokenResponse = await axiosInstance.post(
-            apiEndpoints.login,
-            { email: credentials.email, password: credentials.password },
-            { headers: { 'X-Tenant-Slug': tenantSlug } },
+          // In dev: use bypass endpoint so 2FA is skipped during local testing.
+          // Use absolute URL so axios doesn't prepend the /api base path.
+          const loginPath =
+            process.env.NODE_ENV === 'development' ? `${backendUrl}/dev/login` : apiEndpoints.login;
+          const data: any = await axiosInstance.post(
+            loginPath,
+            { email: credentials.email, password: credentials.password, staffOnly },
+            { headers: { 'X-Tenant-Slug': slug } },
           );
+          // 2FA required — signal the client to redirect to the OTP page
+          if (data?.requiresTwoFactor) {
+            throw new Error(`2FA_REQUIRED|${data.tempToken}|${data.maskedPhone}`);
+          }
+          const typed = data as ApiTokenResponse;
           return {
-            id: data.user.id,
-            email: data.user.email,
-            name: data.user.fullName,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            user: data.user,
+            id: typed.user.id,
+            email: typed.user.email,
+            name: typed.user.fullName,
+            accessToken: typed.accessToken,
+            refreshToken: typed.refreshToken,
+            user: typed.user,
           };
         } catch (error: any) {
+          // Re-throw 2FA signal as-is so Login.tsx can parse it
+          const msg: string = error?.message ?? '';
+          if (msg.startsWith('2FA_REQUIRED|')) throw error;
           throw new Error(error?.data?.error || error?.data?.message || 'Login failed');
+        }
+      },
+    }),
+
+    // Used after a successful 2FA verification — accepts pre-validated tokens from the API
+    CredentialsProvider({
+      id: 'verified-token',
+      name: 'Verified Token',
+      credentials: {
+        accessToken: { label: 'Access Token', type: 'text' },
+        refreshToken: { label: 'Refresh Token', type: 'text' },
+        userData: { label: 'User Data', type: 'text' },
+      },
+      async authorize(credentials): Promise<any> {
+        if (!credentials?.accessToken || !credentials?.userData) return null;
+        try {
+          const user: FacilityUser = JSON.parse(credentials.userData);
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.fullName,
+            accessToken: credentials.accessToken,
+            refreshToken: credentials.refreshToken,
+            user,
+          };
+        } catch {
+          return null;
         }
       },
     }),

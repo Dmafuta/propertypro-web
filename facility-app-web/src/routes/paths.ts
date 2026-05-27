@@ -205,44 +205,59 @@ export const apiEndpoints = {
   // Legacy alias kept for any remaining theme references
   setPassword: '/auth/reset-password',
   getProduct: (id: string) => `e-commerce/products/${id}`,
+  dashboard: '/dashboard',
 };
 
 // ── Facility App paths ───────────────────────────────────────────────────────
+// All paths are functions that accept a slug so they work for both
+// slug-based URLs (yourplatform.com/[slug]/...) and custom domains (/...).
+
 export const facilityPaths = {
-  dashboard: '/dashboard',
+  // Staff auth
+  login:              (slug: string) => `/${slug}/login`,
+  forgotPassword:     (slug: string) => `/${slug}/forgot-password`,
 
-  visitors: '/visitors',
-  visitorsPreRegister: '/visitors/pre-register',
+  // Staff pages
+  dashboard:          (slug: string) => `/${slug}/dashboard`,
+  visitors:           (slug: string) => `/${slug}/visitors`,
+  visitorsPreRegister:(slug: string) => `/${slug}/visitors/pre-register`,
+  checkIn:            (slug: string) => `/${slug}/access/check-in`,
+  badge:              (slug: string) => `/${slug}/access/badge`,
+  passes:             (slug: string) => `/${slug}/access/passes`,
+  blacklist:          (slug: string) => `/${slug}/access/blacklist`,
+  units:              (slug: string) => `/${slug}/units`,
+  unitRequests:       (slug: string) => `/${slug}/units/requests`,
+  users:              (slug: string) => `/${slug}/admin/users`,
+  announcements:      (slug: string) => `/${slug}/admin/announcements`,
+  documents:          (slug: string) => `/${slug}/admin/documents`,
+  auditLog:           (slug: string) => `/${slug}/admin/audit-log`,
+  entrances:          (slug: string) => `/${slug}/admin/entrances`,
+  maintenance:        (slug: string) => `/${slug}/maintenance`,
+  parking:            (slug: string) => `/${slug}/parking`,
+  parcels:            (slug: string) => `/${slug}/parcels`,
+  incidents:          (slug: string) => `/${slug}/incidents`,
+  facilities:         (slug: string) => `/${slug}/facilities`,
+  reports:            (slug: string) => `/${slug}/reports`,
+  settings:           (slug: string) => `/${slug}/settings`,
 
-  checkIn: '/access/check-in',
-  badge: '/access/badge',
-  passes: '/access/passes',
-  blacklist: '/access/blacklist',
+  // Resident auth
+  residentLogin:          (slug: string) => `/${slug}/resident/login`,
+  residentForgotPassword: (slug: string) => `/${slug}/resident/forgot-password`,
+  residentRegister:       (slug: string) => `/${slug}/resident/register`,
 
-  units: '/units',
-  unitRequests: '/units/requests',
+  // Resident pages
+  residentDashboard:  (slug: string) => `/${slug}/resident/dashboard`,
+  residentVisits:     (slug: string) => `/${slug}/resident/visits`,
+  residentMaintenance:(slug: string) => `/${slug}/resident/maintenance`,
+  residentParcels:    (slug: string) => `/${slug}/resident/parcels`,
+  residentDocuments:  (slug: string) => `/${slug}/resident/documents`,
+  residentProfile:    (slug: string) => `/${slug}/resident/profile`,
+  residentVehicles:   (slug: string) => `/${slug}/resident/vehicles`,
 
-  users: '/admin/users',
-  announcements: '/admin/announcements',
-  documents: '/admin/documents',
-  auditLog: '/admin/audit-log',
-  entrances: '/admin/entrances',
-
-  maintenance: '/maintenance',
-  parking: '/parking',
-  parcels: '/parcels',
-  incidents: '/incidents',
-  facilities: '/facilities',
-  reports: '/reports',
-  settings: '/settings',
-
-  residentDashboard: '/resident/dashboard',
-  residentVisits: '/resident/visits',
-  residentMaintenance: '/resident/maintenance',
-  residentParcels: '/resident/parcels',
-  residentDocuments: '/resident/documents',
-  residentProfile: '/resident/profile',
-  residentVehicles: '/resident/vehicles',
+  // SuperAdmin
+  superAdminLogin:     '/superadmin/login',
+  superAdminDashboard: '/superadmin/dashboard',
+  superAdminTenants:   '/superadmin/tenants',
 };
 
 export default paths;

@@ -1,5 +1,5 @@
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
-import { Button, Divider, Link, Stack, Typography } from '@mui/material';
+import { Button, Divider, Stack, Typography } from '@mui/material';
 import { connectedDevices, loggedInDevices } from 'data/account/privacy-protection';
 import { useSnackbar } from 'notistack';
 import AccountTabPanelSection from '../common/AccountTabPanelSection';
@@ -8,7 +8,7 @@ import ChangePassword from './ChangePassword';
 import ConnectedDevice from './ConnectedDevice';
 import LoggedDevice from './LoggedDevice';
 import LoginAlerts from './LoginAlerts';
-import TwoFactorAuthOTP from './TwoFactorAuthOTP';
+import TwoFactorToggle from './TwoFactorToggle';
 
 export interface TwoFAOtpLoginAlertFormValues {
   otpMethod: 'send_text' | 'send_email';
@@ -46,24 +46,10 @@ const PrivacyProtectionTabPanel = () => {
 
         <AccountTabPanelSection
           title="Two Factor Authentication"
-          subtitleEl={
-            <>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                We will ask for OTP whenever we detect login from an unrecognised device.
-              </Typography>
-              <Typography
-                component={Link}
-                href="#!"
-                variant="body2"
-                sx={{ display: 'inline-block', mb: 3 }}
-              >
-                Click here to turn off two factor authentication
-              </Typography>
-            </>
-          }
+          subtitle="Protect your account with SMS-based two-factor authentication. You will receive a one-time code on your verified phone number at each login."
           icon="material-symbols:lock-outline"
         >
-          <TwoFactorAuthOTP />
+          <TwoFactorToggle />
         </AccountTabPanelSection>
 
         <AccountTabPanelSection

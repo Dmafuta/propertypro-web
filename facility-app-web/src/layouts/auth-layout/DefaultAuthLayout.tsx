@@ -1,148 +1,106 @@
 'use client';
 
-import Lottie from 'lottie-react';
-import { PropsWithChildren, Suspense, useMemo } from 'react';
-import { useSelectedLayoutSegment } from 'next/navigation';
-import { Link, Stack, Tab, Tabs, tabsClasses } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import authDark from 'assets/json/auth-dark.json';
-import auth from 'assets/json/auth.json';
-import { useThemeMode } from 'hooks/useThemeMode';
-import { cssVarRgba } from 'lib/utils';
-import paths from 'routes/paths';
-import Logo from 'components/common/Logo';
-import Auth0Icon from 'components/icons/Auth0Icon';
-import FirebaseIcon from 'components/icons/FirebaseIcon';
-import JwtIcon from 'components/icons/JwtIcon';
+import { PropsWithChildren, Suspense } from 'react';
+import { Box, Stack, Typography } from '@mui/material';
 import DefaultLoader from 'components/loading/DefaultLoader';
 
 const DefaultAuthLayout = ({ children }: PropsWithChildren) => {
-  const segment = useSelectedLayoutSegment();
-
-  const { isDark } = useThemeMode();
-
-  const activeTab = useMemo(() => {
-    if (segment === 'auth0' || segment === 'firebase' || segment === 'jwt') return segment;
-
-    return 'jwt';
-  }, [segment]);
-
   return (
-    <Grid
-      container
-      sx={{
-        height: { md: '100vh' },
-        minHeight: '100vh',
-        flexDirection: {
-          xs: 'column',
-          md: 'row',
-        },
-      }}
-    >
-      <Grid
-        sx={{
-          borderRight: { md: 1 },
-          borderColor: { md: 'divider' },
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Left panel — property image with overlay text */}
+      <div
+        style={{
+          display: 'none',
+          flex: '0 0 62.5%',
+          maxWidth: '62.5%',
+          position: 'relative',
+          backgroundImage: 'url(/assets/property-image.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
-        size={{
-          xs: 12,
-          md: 6,
-        }}
+        className="auth-left-panel"
       >
-        <Stack
-          sx={{
-            justifyContent: 'space-between',
-            height: 1,
-            p: { xs: 3, sm: 5 },
+        {/* Contrast overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.50)',
+          }}
+        />
+
+        {/* Content */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            padding: '56px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
           }}
         >
-          <Stack
-            direction="row"
-            sx={{
-              justifyContent: { xs: 'center', md: 'flex-start' },
-              mb: { xs: 5, md: 0 },
+          <p
+            style={{
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '1.75rem',
+              marginBottom: '3rem',
+              letterSpacing: '-0.5px',
             }}
           >
-            <Logo />
-          </Stack>
+            PropertyPro
+          </p>
 
-          <Stack
-            direction="row"
-            sx={{
-              justifyContent: 'center',
-              alignItems: 'center',
-              display: { xs: 'none', md: 'flex' },
-              transform: (theme) => (theme.direction === 'rtl' ? 'scaleX(-1)' : 'unset'),
-            }}
-          >
-            {isDark ? <Lottie animationData={authDark} /> : <Lottie animationData={auth} />}
-          </Stack>
-
-          <Stack direction="row" sx={{ justifyContent: 'center' }}>
-            <Tabs
-              value={activeTab}
-              sx={{
-                bgcolor: 'background.elevation1',
-                p: 1,
-                borderRadius: 9,
-                [`& .${tabsClasses.indicator}`]: {
-                  height: 1,
-                  bgcolor: (theme) => cssVarRgba(theme.vars.palette.primary.mainChannel, 0.1),
-                  borderRadius: 12,
-                },
+          <div>
+            <p
+              style={{
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '3rem',
+                lineHeight: 1.2,
+                marginBottom: '1rem',
               }}
             >
-              <Tab
-                component={Link}
-                underline="none"
-                href={paths.defaultJwtLogin}
-                value="jwt"
-                label="jwt"
-                icon={<JwtIcon />}
-                iconPosition="start"
-                disableRipple
-                sx={{ px: 1.75 }}
-              />
-              <Tab
-                component={Link}
-                underline="none"
-                href={paths.defaultAuth0Login}
-                value="auth0"
-                label="Auth 0"
-                icon={<Auth0Icon />}
-                iconPosition="start"
-                disableRipple
-                sx={{ px: 1.75 }}
-              />
-              <Tab
-                component={Link}
-                underline="none"
-                href={paths.defaultFirebaseLogin}
-                value="firebase"
-                label="Firebase"
-                icon={<FirebaseIcon />}
-                iconPosition="start"
-                disableRipple
-                sx={{ px: 1.75 }}
-              />
-            </Tabs>
-          </Stack>
-        </Stack>
-      </Grid>
-      <Grid
-        size={{
-          md: 6,
-          xs: 12,
-        }}
+              Smart Facility
+              <br />
+              Management
+            </p>
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.75)',
+                fontWeight: 400,
+                fontSize: '1.125rem',
+                maxWidth: 480,
+                lineHeight: 1.6,
+              }}
+            >
+              Streamline visitor access, resident services, and property operations — all from one
+              intelligent platform.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right panel — login form */}
+      <Box
         sx={{
-          display: { xs: 'flex', md: 'block' },
-          flexDirection: 'column',
           flex: 1,
+          borderLeft: { md: '1px solid' },
+          borderColor: { md: 'divider' },
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <Suspense fallback={<DefaultLoader />}>{children}</Suspense>
-      </Grid>
-    </Grid>
+      </Box>
+
+      <style>{`
+        @media (min-width: 900px) {
+          .auth-left-panel { display: block !important; }
+        }
+      `}</style>
+    </Box>
   );
 };
 

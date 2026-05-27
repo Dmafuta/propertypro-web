@@ -95,7 +95,7 @@ const LandingAppBar = (props: AppBarOwnProps) => {
           >
             Sign In
           </Button>
-          <Button variant="contained" href="#hero" sx={{ minWidth: 110 }}>
+          <Button variant="contained" href="#pricing" sx={{ minWidth: 110 }}>
             Get Started
           </Button>
           {!upLg && <Sidenav menus={menus} />}

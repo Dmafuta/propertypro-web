@@ -12,8 +12,10 @@ public class AuthController(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     TokenService tokenService,
+    OtpService otpService,
     TenantContext tenantContext) : ControllerBase
 {
+    // ── POST /api/auth/login ───────────────────────────────────────────────────
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
@@ -35,13 +37,172 @@ public class AuthController(
         if (req.StaffOnly && (user.UserType == UserType.HomeOwner || user.UserType == UserType.Resident))
             return Forbid();
 
-        var roles        = await userManager.GetRolesAsync(user);
-        var accessToken  = tokenService.GenerateAccessToken(user, roles, tenantContext.TenantId);
-        var refreshToken = await tokenService.CreateRefreshTokenAsync(user.Id);
+        bool isStaff          = user.UserType == UserType.Staff;
+        bool requiresTwoFactor = isStaff || user.TwoFactorEnabled;
 
-        return Ok(new TokenResponse(accessToken, refreshToken, UserDto.From(user, roles, tenantContext)));
+        if (requiresTwoFactor)
+        {
+            if (!user.PhoneNumberConfirmed || string.IsNullOrEmpty(user.PhoneNumber))
+            {
+                if (isStaff)
+                    return Unauthorized(new { error = "Your account requires a verified phone number for two-factor authentication. Please contact your administrator." });
+
+                // Resident enabled 2FA but phone no longer verified — disable silently and proceed
+                user.TwoFactorEnabled = false;
+                await userManager.UpdateAsync(user);
+            }
+            else
+            {
+                var sent = await otpService.SendOtpAsync(user.Id, user.PhoneNumber, OtpPurpose.Login);
+                if (!sent)
+                    return StatusCode(503, new { error = "Failed to send verification code. Please try again." });
+
+                var tempToken = tokenService.GenerateTempToken(user.Id);
+                return Ok(new
+                {
+                    requiresTwoFactor = true,
+                    tempToken,
+                    maskedPhone = MaskPhone(user.PhoneNumber),
+                });
+            }
+        }
+
+        var roles       = await userManager.GetRolesAsync(user);
+        var accessToken = tokenService.GenerateAccessToken(user, roles, tenantContext.TenantId);
+        var refresh     = await tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return Ok(new TokenResponse(accessToken, refresh, UserDto.From(user, roles, tenantContext)));
     }
 
+    // ── POST /api/auth/send-2fa ────────────────────────────────────────────────
+    [HttpPost("send-2fa")]
+    public async Task<IActionResult> SendTwoFactor([FromBody] SendTwoFactorRequest req)
+    {
+        var userId = tokenService.ValidateTempToken(req.TempToken);
+        if (userId is null)
+            return Unauthorized(new { error = "Invalid or expired session. Please log in again." });
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null || string.IsNullOrEmpty(user.PhoneNumber) || !user.PhoneNumberConfirmed)
+            return BadRequest(new { error = "Phone number not available." });
+
+        if (await otpService.HasRecentOtpAsync(userId, OtpPurpose.Login))
+            return BadRequest(new { error = "A code was recently sent. Please wait 30 seconds before requesting another." });
+
+        var sent = await otpService.SendOtpAsync(userId, user.PhoneNumber, OtpPurpose.Login);
+        if (!sent)
+            return StatusCode(503, new { error = "Failed to send code. Please try again." });
+
+        return Ok(new { message = "Code sent.", maskedPhone = MaskPhone(user.PhoneNumber) });
+    }
+
+    // ── POST /api/auth/verify-2fa ──────────────────────────────────────────────
+    [HttpPost("verify-2fa")]
+    public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest req)
+    {
+        var userId = tokenService.ValidateTempToken(req.TempToken);
+        if (userId is null)
+            return Unauthorized(new { error = "Invalid or expired session. Please log in again." });
+
+        var valid = await otpService.VerifyOtpAsync(userId, req.Code, OtpPurpose.Login);
+        if (!valid)
+            return Unauthorized(new { error = "Invalid or expired code." });
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        var roles       = await userManager.GetRolesAsync(user);
+        var accessToken = tokenService.GenerateAccessToken(user, roles, user.TenantId);
+        var refresh     = await tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return Ok(new TokenResponse(accessToken, refresh, UserDto.From(user, roles, tenantContext)));
+    }
+
+    // ── POST /api/auth/send-phone-verification ────────────────────────────────
+    [HttpPost("send-phone-verification")]
+    [Authorize]
+    public async Task<IActionResult> SendPhoneVerification([FromBody] SendPhoneVerificationRequest req)
+    {
+        var userId = userManager.GetUserId(User);
+        if (userId is null) return Unauthorized();
+
+        var normalized = NormalizePhone(req.PhoneNumber);
+        if (normalized is null)
+            return BadRequest(new { error = "Invalid phone number. Use E.164 format, e.g. +254712345678" });
+
+        if (await otpService.HasRecentOtpAsync(userId, OtpPurpose.PhoneVerify))
+            return BadRequest(new { error = "A code was recently sent. Please wait 30 seconds." });
+
+        bool sent;
+        try
+        {
+            sent = await otpService.SendOtpAsync(userId, normalized, OtpPurpose.PhoneVerify);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"[{ex.GetType().Name}] {ex.Message}" });
+        }
+
+        if (!sent)
+            return StatusCode(503, new { error = "Failed to send code. Please try again." });
+
+        return Ok(new { message = "Verification code sent.", maskedPhone = MaskPhone(normalized) });
+    }
+
+    // ── POST /api/auth/verify-phone ───────────────────────────────────────────
+    [HttpPost("verify-phone")]
+    [Authorize]
+    public async Task<IActionResult> VerifyPhone([FromBody] VerifyPhoneRequest req)
+    {
+        var userId = userManager.GetUserId(User);
+        if (userId is null) return Unauthorized();
+
+        var normalized = NormalizePhone(req.PhoneNumber);
+        if (normalized is null)
+            return BadRequest(new { error = "Invalid phone number." });
+
+        var valid = await otpService.VerifyOtpAsync(userId, req.Code, OtpPurpose.PhoneVerify);
+        if (!valid)
+            return Unauthorized(new { error = "Invalid or expired code." });
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        user.PhoneNumber          = normalized;
+        user.PhoneNumberConfirmed = true;
+        await userManager.UpdateAsync(user);
+
+        return Ok(new { message = "Phone number verified successfully." });
+    }
+
+    // ── PUT /api/auth/toggle-2fa ──────────────────────────────────────────────
+    [HttpPut("toggle-2fa")]
+    [Authorize]
+    public async Task<IActionResult> ToggleTwoFactor([FromBody] ToggleTwoFactorRequest req)
+    {
+        var userId = userManager.GetUserId(User);
+        if (userId is null) return Unauthorized();
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        if (user.UserType == UserType.Staff)
+            return BadRequest(new { error = "Two-factor authentication is mandatory for staff accounts and cannot be disabled." });
+
+        if (req.Enable && (!user.PhoneNumberConfirmed || string.IsNullOrEmpty(user.PhoneNumber)))
+            return BadRequest(new { error = "Please verify your phone number before enabling two-factor authentication." });
+
+        user.TwoFactorEnabled = req.Enable;
+        await userManager.UpdateAsync(user);
+
+        return Ok(new
+        {
+            twoFactorEnabled = user.TwoFactorEnabled,
+            message = req.Enable ? "Two-factor authentication enabled." : "Two-factor authentication disabled.",
+        });
+    }
+
+    // ── POST /api/auth/refresh ────────────────────────────────────────────────
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
     {
@@ -58,6 +219,7 @@ public class AuthController(
         return Ok(new TokenResponse(newAccess, newRefresh, UserDto.From(user, roles, tenantContext)));
     }
 
+    // ── POST /api/auth/logout ─────────────────────────────────────────────────
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout([FromBody] RefreshRequest req)
@@ -66,6 +228,7 @@ public class AuthController(
         return NoContent();
     }
 
+    // ── GET /api/auth/me ──────────────────────────────────────────────────────
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> Me()
@@ -80,9 +243,26 @@ public class AuthController(
         return Ok(UserDto.From(user, roles, tenantContext));
     }
 
-    // ── POST /api/auth/register ────────────────────────────────────────────────
-    // Resident self-registration. Always creates a HomeOwner with no role until
-    // admin assigns a unit (which grants Occupant role).
+    // ── GET /api/auth/me/phone ────────────────────────────────────────────────
+    [HttpGet("me/phone")]
+    [Authorize]
+    public async Task<IActionResult> GetMyPhone()
+    {
+        var userId = userManager.GetUserId(User);
+        if (userId is null) return Unauthorized();
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        return Ok(new
+        {
+            phoneNumber           = user.PhoneNumber,
+            phoneNumberConfirmed  = user.PhoneNumberConfirmed,
+            twoFactorEnabled      = user.TwoFactorEnabled,
+        });
+    }
+
+    // ── POST /api/auth/register ───────────────────────────────────────────────
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
@@ -97,7 +277,7 @@ public class AuthController(
             PhoneNumber    = req.Phone,
             TenantId       = tenantContext.TenantId,
             UserType       = Data.Models.UserType.HomeOwner,
-            EmailConfirmed = true,   // simplified — wire email verification when SMTP is configured
+            EmailConfirmed = true,
         };
 
         var result = await userManager.CreateAsync(user, req.Password);
@@ -120,15 +300,11 @@ public class AuthController(
             return BadRequest(new { error = "Tenant not found" });
 
         var user = await userManager.FindByEmailAsync(req.Email);
-
-        // Always return 200 to avoid user enumeration
         if (user is null || user.TenantId != tenantContext.TenantId)
             return Ok(new { message = "If that email exists, a reset link has been sent." });
 
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
 
-        // TODO: send email with token when SMTP is configured.
-        // In development, return the token directly so the frontend can test the flow.
         var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
         if (isDev)
             return Ok(new { message = "Reset token generated (dev only).", token });
@@ -151,9 +327,27 @@ public class AuthController(
         if (!result.Succeeded)
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
-        // Revoke all existing refresh tokens on password reset
         await tokenService.RevokeAllRefreshTokensAsync(user.Id);
-
         return Ok(new { message = "Password reset successfully." });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    private static string MaskPhone(string phone)
+    {
+        if (phone.Length <= 4) return "****";
+        var suffix = phone[^2..];
+        var prefix = phone.Length > 4 ? phone[..3] : phone[..2];
+        var masked = new string('*', phone.Length - prefix.Length - suffix.Length);
+        return $"{prefix}{masked}{suffix}";
+    }
+
+    private static string? NormalizePhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return null;
+        phone = phone.Trim();
+        if (!phone.StartsWith('+')) return null;
+        var digits = phone[1..];
+        if (digits.Length < 7 || digits.Length > 15 || !digits.All(char.IsDigit)) return null;
+        return phone;
     }
 }

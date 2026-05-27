@@ -16,6 +16,13 @@ public record RegisterRequest(
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Token, string NewPassword);
 
+// ── 2FA ───────────────────────────────────────────────────────────────────────
+public record VerifyTwoFactorRequest(string TempToken, string Code);
+public record SendTwoFactorRequest(string TempToken);
+public record SendPhoneVerificationRequest(string PhoneNumber);
+public record VerifyPhoneRequest(string PhoneNumber, string Code);
+public record ToggleTwoFactorRequest(bool Enable);
+
 public record UserDto(
     string   Id,
     string   Email,

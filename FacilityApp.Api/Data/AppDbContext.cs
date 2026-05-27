@@ -27,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, TenantContext 
     public DbSet<UnitRequest>       UnitRequests       { get; set; }
     public DbSet<AuditLog>          AuditLogs          { get; set; }
     public DbSet<RefreshToken>      RefreshTokens      { get; set; }
+    public DbSet<OtpCode>           OtpCodes           { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -59,5 +60,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, TenantContext 
         builder.Entity<Tenant>().HasIndex(t => t.CustomDomain);
         builder.Entity<RefreshToken>().HasIndex(t => t.Token).IsUnique();
         builder.Entity<RefreshToken>().HasIndex(t => t.UserId);
+
+        // OtpCode — no tenant filter, queried by UserId + Purpose
+        builder.Entity<OtpCode>()
+            .HasOne(o => o.User)
+            .WithMany()
+            .HasForeignKey(o => o.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<OtpCode>().HasIndex(o => new { o.UserId, o.Purpose, o.IsUsed, o.ExpiresAt });
     }
 }

@@ -87,6 +87,15 @@ builder.Services.AddCors(o => o.AddPolicy("FrontendPolicy", policy =>
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<TenantService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<OtpService>();
+builder.Services.AddHttpClient<ISmsService, AfricasTalkingService>();
+
+// ── Minimal API JSON options (case-insensitive for dev endpoints) ──────────────
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    o.SerializerOptions.PropertyNameCaseInsensitive = true;
+    o.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
 
 // ── Controllers + OpenAPI ──────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -187,6 +196,91 @@ if (app.Environment.IsDevelopment())
         }
 
         return Results.Ok(new { email, password });
+    });
+
+    // Direct login bypassing 2FA — dev/testing only
+    app.MapPost("/dev/login", async (
+        HttpContext httpCtx,
+        UserManager<ApplicationUser> userMgr,
+        SignInManager<ApplicationUser> signMgr,
+        TokenService tokenSvc,
+        AppDbContext db) =>
+    {
+        using var doc  = await System.Text.Json.JsonDocument.ParseAsync(httpCtx.Request.Body);
+        var email    = doc.RootElement.GetProperty("email").GetString() ?? "";
+        var password = doc.RootElement.GetProperty("password").GetString() ?? "";
+
+        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email);
+        if (user is null) return Results.Unauthorized();
+
+        var result = await signMgr.CheckPasswordSignInAsync(user, password, false);
+        if (!result.Succeeded) return Results.Unauthorized();
+
+        var roles  = await userMgr.GetRolesAsync(user);
+        var access = tokenSvc.GenerateAccessToken(user, roles, user.TenantId);
+        var refresh= await tokenSvc.CreateRefreshTokenAsync(user.Id);
+
+        // Use anonymous object so minimal API serializes camelCase (matching frontend expectations)
+        return Results.Ok(new
+        {
+            accessToken  = access,
+            refreshToken = refresh,
+            user = new
+            {
+                id            = user.Id,
+                email         = user.Email ?? "",
+                fullName      = user.FullName,
+                userType      = user.UserType.ToString(),
+                roles         = (IList<string>)roles,
+                tenantId      = user.TenantId.ToString(),
+                tenantName    = "",
+                tenantSlug    = "",
+                primaryColour = (string?)null,
+                logoUrl       = (string?)null,
+            },
+        });
+    });
+
+    // Returns (or resets) the active OTP for a user — dev/testing only
+    app.MapGet("/dev/get-otp", async (
+        string email, string purpose,
+        UserManager<ApplicationUser> userMgr,
+        AppDbContext db) =>
+    {
+        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email);
+        if (user is null) return Results.NotFound(new { error = $"User '{email}' not found" });
+
+        // Invalidate existing codes
+        await db.OtpCodes
+            .Where(o => o.UserId == user.Id && o.Purpose == purpose && !o.IsUsed)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.IsUsed, true));
+
+        // Create a new code with known value "123456"
+        const string plainCode = "123456";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(plainCode)));
+        db.OtpCodes.Add(new FacilityApp.Api.Data.Models.OtpCode
+        {
+            UserId    = user.Id,
+            CodeHash  = hash,
+            Purpose   = purpose,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+        });
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new { email, purpose, code = plainCode, expiresInMinutes = 10 });
+    });
+
+    // Sets and verifies a phone number for any user — bypasses SMS for dev/testing
+    app.MapGet("/dev/verify-phone", async (
+        string email, string phone,
+        UserManager<ApplicationUser> userMgr) =>
+    {
+        var user = await userMgr.FindByEmailAsync(email);
+        if (user is null) return Results.NotFound(new { error = $"User '{email}' not found" });
+        user.PhoneNumber = phone;
+        user.PhoneNumberConfirmed = true;
+        await userMgr.UpdateAsync(user);
+        return Results.Ok(new { email, phone, phoneNumberConfirmed = true });
     });
 
     app.MapGet("/dev/seed-admin", async (

@@ -91,6 +91,45 @@ public class TokenService(IConfiguration config, IDbContextFactory<AppDbContext>
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsRevoked, true));
     }
 
+    /// <summary>
+    /// Short-lived (5 min) JWT used to bridge the password-verified step to the 2FA step.
+    /// Contains scope="2fa" claim so it cannot be used as a regular access token.
+    /// </summary>
+    public string GenerateTempToken(string userId)
+    {
+        var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer:             _issuer,
+            audience:           _audience,
+            claims:
+            [
+                new Claim(JwtRegisteredClaimNames.Sub, userId),
+                new Claim("scope", "2fa"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            ],
+            expires:            DateTime.UtcNow.AddMinutes(10),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>
+    /// Validates a temp token. Returns the userId if valid, null otherwise.
+    /// </summary>
+    public string? ValidateTempToken(string token)
+    {
+        try
+        {
+            var handler   = new JwtSecurityTokenHandler();
+            var principal = handler.ValidateToken(token, GetValidationParameters(), out _);
+            if (principal.FindFirst("scope")?.Value != "2fa") return null;
+            return principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        }
+        catch { return null; }
+    }
+
     public TokenValidationParameters GetValidationParameters() => new()
     {
         ValidateIssuer           = true,

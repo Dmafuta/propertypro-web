@@ -38,4 +38,4 @@ yarn-error.log*
 next-env.d.ts
 
 
-public/assets
+# public/assets committed to repo (needed for Next.js static imports at build time)

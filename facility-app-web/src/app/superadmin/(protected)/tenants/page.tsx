@@ -205,12 +205,14 @@ export default function SuperAdminTenantsPage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         sx={{ mb: 2, maxWidth: 360 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 18, color: "text.secondary" }} />
-            </InputAdornment>
-          ),
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 18, color: "text.secondary" }} />
+              </InputAdornment>
+            ),
+          },
         }}
       />
 

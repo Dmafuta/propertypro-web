@@ -230,14 +230,16 @@ const Hero = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleAccessPortal()}
                     error={!!error}
                     helperText={error || ' '}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                            propertypro.com/
-                          </Typography>
-                        </InputAdornment>
-                      ),
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                              propertypro.com/
+                            </Typography>
+                          </InputAdornment>
+                        ),
+                      },
                     }}
                     sx={{ flex: 1 }}
                   />

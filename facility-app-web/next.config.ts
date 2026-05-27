@@ -9,6 +9,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const IsDEV = process.env.NEXT_PUBLIC_DEV_MODE === 'dev';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   images: {
     dangerouslyAllowLocalIP: IsDEV,
     remotePatterns: [

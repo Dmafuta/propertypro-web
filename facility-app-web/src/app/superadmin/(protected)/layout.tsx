@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import MainLayout from 'layouts/main-layout';
+import type { ReactNode } from "react";
+import SuperAdminLayout from "layouts/superadmin-layout";
 
 export default function SuperAdminProtectedLayout({ children }: { children: ReactNode }) {
-  return <MainLayout>{children}</MainLayout>;
+  return <SuperAdminLayout>{children}</SuperAdminLayout>;
 }

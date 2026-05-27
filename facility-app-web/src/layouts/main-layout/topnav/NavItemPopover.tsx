@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, MouseEvent, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import {
   Box,
   Link,
@@ -29,6 +29,10 @@ const NavitemPopover = ({ anchorEl, open, handleClose, items, level }: NavItemPo
   const [selectedItems, setSelectedItems] = useState<SubMenuItem[]>([]);
   const { isNestedItemOpen } = useNavContext();
   const pathname = usePathname();
+  const params = useParams<{ slug?: string }>();
+  const slug = params?.slug ?? '';
+  const resolvePath = (p: unknown) =>
+    typeof p === 'function' ? (p as (s: string) => string)(slug) : (p as string | undefined);
 
   useEffect(() => {
     return () => {
@@ -82,7 +86,7 @@ const NavitemPopover = ({ anchorEl, open, handleClose, items, level }: NavItemPo
             <Fragment key={item.pathName}>
               <ListItemButton
                 component={item.items ? 'div' : Link}
-                href={item.items ? undefined : item.path}
+                href={item.items ? undefined : resolvePath(item.path)}
                 onClick={(e: MouseEvent<HTMLDivElement>) => {
                   if (item.items) {
                     setItemAnchorEl(e.currentTarget);
@@ -105,7 +109,7 @@ const NavitemPopover = ({ anchorEl, open, handleClose, items, level }: NavItemPo
                 }}
                 selected={
                   pathname !== paths.comingSoon &&
-                  (pathname === item.path ||
+                  (pathname === resolvePath(item.path) ||
                     (item.selectionPrefix && pathname!.includes(item.selectionPrefix)) ||
                     isNestedItemOpen(item.items))
                 }

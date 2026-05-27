@@ -3,7 +3,7 @@
 import { MouseEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { Badge, badgeClasses, Box, Chip, Collapse } from '@mui/material';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -35,6 +35,12 @@ const NavItem = ({ item, level }: NavItemProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
   const [openPopperMenu, setOpenPopperMenu] = useState(false);
   const pathname = usePathname();
+  const params = useParams<{ slug?: string }>();
+  const resolvedPath = useMemo(() => {
+    const p = item.path as unknown;
+    if (typeof p === 'function') return (p as (s: string) => string)(params?.slug ?? '');
+    return item.path;
+  }, [item.path, params?.slug]);
   const { setOpenItems, openItems, isNestedItemOpen } = useNavContext();
   const { currentBreakpoint, up } = useBreakpoints();
   const upMd = up('md');
@@ -124,14 +130,14 @@ const NavItem = ({ item, level }: NavItemProps) => {
       <ListItem key={item.pathName} disablePadding sx={[isStackedSideNav && { mb: 0.25 }]}>
         <ListItemButton
           component={item.items ? 'div' : Link}
-          href={item.path}
+          href={resolvedPath}
           onClick={toggleCollapseItem}
           onMouseEnter={sidenavCollapsed ? handleMouseEnter : undefined}
           onMouseLeave={sidenavCollapsed ? handleClose : undefined}
           aria-expanded={openPopperMenu}
           selected={
             pathname !== paths.comingSoon &&
-            (pathname === item.path ||
+            (pathname === resolvedPath ||
               (item.selectionPrefix && pathname!.includes(item.selectionPrefix)) ||
               (item.key === 'e_commerce' && item.path === paths.ecommerce && pathname === '/') ||
               (sidenavCollapsed && sidenavType === 'default' && isNestedItemOpen(item.items)) ||

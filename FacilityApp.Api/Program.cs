@@ -220,6 +220,9 @@ if (app.Environment.IsDevelopment())
         var access = tokenSvc.GenerateAccessToken(user, roles, user.TenantId);
         var refresh= await tokenSvc.CreateRefreshTokenAsync(user.Id);
 
+        var tenant = await db.Tenants.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == user.TenantId);
+
         // Use anonymous object so minimal API serializes camelCase (matching frontend expectations)
         return Results.Ok(new
         {
@@ -233,10 +236,10 @@ if (app.Environment.IsDevelopment())
                 userType      = user.UserType.ToString(),
                 roles         = (IList<string>)roles,
                 tenantId      = user.TenantId.ToString(),
-                tenantName    = "",
-                tenantSlug    = "",
-                primaryColour = (string?)null,
-                logoUrl       = (string?)null,
+                tenantName    = tenant?.Name ?? "",
+                tenantSlug    = tenant?.Slug ?? "",
+                primaryColour = tenant?.PrimaryColour,
+                logoUrl       = tenant?.LogoUrl,
             },
         });
     });

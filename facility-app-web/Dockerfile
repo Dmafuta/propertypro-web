@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Baked in at build time — client bundle reads this at runtime
-ARG NEXT_PUBLIC_API_URL=https://greatwallgardens.estate/backend
+ARG NEXT_PUBLIC_API_URL=https://greatwallgardens.estate
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_DEV_MODE=prod
 ENV NEXT_PUBLIC_BUILD_MODE=production

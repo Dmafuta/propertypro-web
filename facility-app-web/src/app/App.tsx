@@ -1,15 +1,10 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useConfigFromQuery } from 'hooks/useConfigFromQuery';
+import useTenantPrimaryColor from 'hooks/useTenantPrimaryColor';
 import SettingsPanelProvider from 'providers/SettingsPanelProvider';
-import SettingsPanel from 'components/settings-panel/SettingsPanel';
-
-const SettingPanelToggler = dynamic(() => import('components/settings-panel/SettingPanelToggler'), {
-  ssr: false,
-});
 
 const App = ({
   children,
@@ -19,6 +14,7 @@ const App = ({
   const pathname = usePathname();
 
   useConfigFromQuery();
+  useTenantPrimaryColor();
 
   const isShowcase = pathname?.startsWith('/showcase') ?? false;
 
@@ -53,12 +49,6 @@ const App = ({
         `}</style>
       )}
       {children}
-      {!isShowcase && (
-        <>
-          <SettingsPanel />
-          <SettingPanelToggler />
-        </>
-      )}
     </SettingsPanelProvider>
   );
 };

@@ -6,7 +6,6 @@ import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import ThemeToggler from "layouts/main-layout/common/ThemeToggler";
 import { useBreakpoints } from "providers/BreakpointsProvider";
 import Logo from "components/common/Logo";
 import Sidenav from "./nav/Sidenav";
@@ -86,7 +85,6 @@ const LandingAppBar = (props: AppBarOwnProps) => {
 
         <Stack direction="row" sx={{ gap: 1 }} ref={popoverAnchorRef}>
           {upLg && <Topnav menus={menus} anchorRef={popoverAnchorRef} />}
-          <ThemeToggler />
           <Button
             variant="outlined"
             color="neutral"

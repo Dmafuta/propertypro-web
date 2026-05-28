@@ -14,7 +14,7 @@ const Pricing = () => {
   const isBetweenSmLg = between('sm', 'lg');
 
   return (
-    <Box sx={{ px: { xs: 3, md: 5 }, pt: { xs: 8, sm: 16 }, pb: { xs: 0, sm: 8 } }}>
+    <Box sx={{ px: { xs: 3, md: 5 }, pt: { xs: 6, sm: 10 }, pb: { xs: 0, sm: 8 } }}>
       <SectionHeader
         title="Pricing"
         subtitle="Choose the package that fit best for you"

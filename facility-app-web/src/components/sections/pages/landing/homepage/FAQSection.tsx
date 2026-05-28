@@ -22,7 +22,7 @@ const FAQSection = ({ data }: { data: FAQ[] }) => {
   };
 
   return (
-    <Box sx={{ px: { xs: 3, md: 5 }, pt: { xs: 8, sm: 16 }, pb: 8 }}>
+    <Box sx={{ px: { xs: 3, md: 5 }, pt: { xs: 6, sm: 10 }, pb: 8 }}>
       <SectionHeader title="FAQ" subtitle="Here are some common enquiries we face" sx={{ mb: 3 }} />
 
       <RevealItems component={Container} maxWidth={false} sx={{ maxWidth: 582, px: { xs: 0 } }}>

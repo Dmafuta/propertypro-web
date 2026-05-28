@@ -2,6 +2,7 @@
 
 import { PropsWithChildren, useEffect, useRef } from 'react';
 import useSettingsPanelMountEffect from 'hooks/useSettingsPanelMountEffect';
+import { useThemeMode } from 'hooks/useThemeMode';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import { mutate } from 'swr';
 import LandingAppBar from './app-bar';
@@ -13,7 +14,10 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
     setConfig,
   } = useSettingsContext();
 
+  const { themePreset, setThemePreset } = useThemeMode();
+
   const navColorRef = useRef(navColor);
+  const themePresetRef = useRef(themePreset);
 
   useSettingsPanelMountEffect({
     disableNavigationMenuSection: true,
@@ -22,14 +26,12 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
   });
 
   useEffect(() => {
-    setConfig({
-      navColor: 'default',
-    });
+    setConfig({ navColor: 'default' });
+    setThemePreset('luxury');
 
     return () => {
-      setConfig({
-        navColor: navColorRef.current,
-      });
+      setConfig({ navColor: navColorRef.current });
+      setThemePreset(themePresetRef.current);
       mutate((key: unknown) => Array.isArray(key) && key[0].startsWith('e-commerce'), undefined, {
         revalidate: true,
       });

@@ -37,7 +37,7 @@ const HowItWorks = () => {
   return (
     <Box
       id="how-it-works"
-      sx={{ py: { xs: 8, md: 12 }, bgcolor: "background.default" }}
+      sx={{ pt: { xs: 6, sm: 10 }, pb: { xs: 8, md: 12 }, bgcolor: "background.default" }}
     >
       <Container maxWidth={false} sx={{ maxWidth: 1448, px: { xs: 3, md: 5 } }}>
         {/* Header */}
@@ -53,8 +53,7 @@ const HowItWorks = () => {
           <RevealText>
             <Typography
               variant="h3"
-              fontWeight={800}
-              sx={{ typography: { xs: "h4", md: "h3" }, mb: 2, maxWidth: 520 }}
+              sx={{ typography: { xs: "h4", md: "h3" }, mb: 2, maxWidth: 520, fontWeight: 800 }}
             >
               Up and running in three simple steps
             </Typography>
@@ -98,8 +97,8 @@ const HowItWorks = () => {
                   </Box>
                   <Typography
                     variant="h2"
-                    fontWeight={900}
                     sx={{
+                      fontWeight: 900,
                       color: "divider",
                       lineHeight: 1,
                       fontSize: "3rem",
@@ -112,7 +111,7 @@ const HowItWorks = () => {
 
                 {/* Text */}
                 <Box>
-                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
                     {step.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>

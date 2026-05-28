@@ -28,24 +28,24 @@ export interface CreateTenantPayload {
 }
 
 export const useListTenants = () =>
-  useSWR<TenantItem[]>("/tenants", axiosFetcher, { revalidateOnMount: true });
+  useSWR<TenantItem[]>("/superadmin/tenants", axiosFetcher, { revalidateOnMount: true });
 
 export const useCreateTenant = () =>
   useSWRMutation(
-    "/tenants",
+    "/superadmin/tenants",
     (_url: string, { arg }: { arg: CreateTenantPayload }) =>
-      axiosInstance.post("/tenants", arg)
+      axiosInstance.post("/superadmin/tenants", arg)
   );
 
 export const useToggleTenant = (id: string) =>
   useSWRMutation(
-    `/tenants/${id}/toggle`,
+    `/superadmin/tenants/${id}/toggle`,
     (url: string) => axiosInstance.patch(url)
   );
 
 export const useUpdateTenantPlan = (id: string) =>
   useSWRMutation(
-    `/tenants/${id}/plan`,
+    `/superadmin/tenants/${id}/plan`,
     (url: string, { arg }: { arg: { plan: number } }) =>
       axiosInstance.patch(url, arg)
   );

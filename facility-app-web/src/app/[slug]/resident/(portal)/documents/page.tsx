@@ -28,9 +28,9 @@ export default function DocumentsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 3 }}>
+      <Stack direction="row" sx={{ gap: 1, mb: 3, alignItems: "center" }}>
         <IconifyIcon icon="material-symbols:folder-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-        <Typography variant="h5" fontWeight={700}>Documents</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Documents</Typography>
       </Stack>
 
       {isLoading ? (
@@ -42,14 +42,14 @@ export default function DocumentsPage() {
           ))}
         </Grid>
       ) : !docs?.length ? (
-        <Stack alignItems="center" sx={{ py: 8, gap: 1 }}>
+        <Stack sx={{ py: 8, gap: 1, alignItems: "center" }}>
           <IconifyIcon icon="material-symbols:folder-outline-rounded" sx={{ fontSize: 48, color: "text.disabled" }} />
           <Typography variant="body2" color="text.disabled">No documents available.</Typography>
         </Stack>
       ) : (
         Object.entries(grouped).map(([category, items]) => (
           <Box key={category} sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1.5, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>
               {category}
             </Typography>
             <Card variant="outlined">
@@ -63,13 +63,13 @@ export default function DocumentsPage() {
                     rel="noopener noreferrer"
                     sx={{ px: 2.5, py: 1.5 }}
                   >
-                    <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
+                    <Stack direction="row" sx={{ gap: 2, alignItems: "center" }}>
                       <IconifyIcon
                         icon="material-symbols:description-outline-rounded"
                         sx={{ fontSize: 28, color: "primary.main", flexShrink: 0 }}
                       />
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={600}>{doc!.title}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{doc!.title}</Typography>
                         <Typography variant="caption" color="text.secondary">
                           Uploaded {dayjs(doc!.uploadedAt).format("DD MMM YYYY")}
                         </Typography>

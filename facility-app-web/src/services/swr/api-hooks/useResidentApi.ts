@@ -49,7 +49,7 @@ export interface ResidentVisit {
 
 export const useResidentVisits = (status?: VisitStatus) =>
   useSWR<ResidentVisit[]>(
-    status ? ["/resident/visits", { params: { status } }] : "/resident/visits",
+    status ? `/resident/visits?status=${status}` : "/resident/visits",
     axiosFetcher,
     { revalidateOnMount: true },
   );
@@ -128,7 +128,7 @@ export interface ResidentParcel {
 
 export const useResidentParcels = (status?: ParcelStatus) =>
   useSWR<ResidentParcel[]>(
-    status ? ["/resident/parcels", { params: { status } }] : "/resident/parcels",
+    status ? `/resident/parcels?status=${status}` : "/resident/parcels",
     axiosFetcher,
     { revalidateOnMount: true },
   );
@@ -173,7 +173,7 @@ export interface ResidentDocument {
 }
 
 export const useResidentDocuments = () =>
-  useSWR<ResidentDocument[]>("/documents", axiosFetcher, {
+  useSWR<ResidentDocument[]>("/documents/active", axiosFetcher, {
     revalidateOnMount: true,
   });
 
@@ -181,16 +181,14 @@ export const useResidentDocuments = () =>
 
 export interface ResidentProfile {
   id: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   phoneNumber: string | null;
   unitNumber: string | null;
 }
 
 export interface ProfileUpdateInput {
-  firstName: string;
-  lastName: string;
+  fullName?: string;
   phoneNumber?: string;
 }
 

@@ -24,8 +24,7 @@ import {
 } from "services/swr/api-hooks/useResidentApi";
 
 const schema = yup.object({
-  firstName:   yup.string().required("First name is required"),
-  lastName:    yup.string().required("Last name is required"),
+  fullName:    yup.string().optional(),
   phoneNumber: yup.string().optional(),
 });
 
@@ -44,8 +43,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       reset({
-        firstName:   profile.firstName,
-        lastName:    profile.lastName,
+        fullName:    profile.fullName,
         phoneNumber: profile.phoneNumber ?? "",
       });
     }
@@ -60,21 +58,21 @@ export default function ProfilePage() {
     }
   };
 
-  const initials = profile
-    ? `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase()
+  const initials = profile?.fullName
+    ? profile.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 3 }}>
+      <Stack direction="row" sx={{ gap: 1, mb: 3, alignItems: "center" }}>
         <IconifyIcon icon="material-symbols:account-circle-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-        <Typography variant="h5" fontWeight={700}>My Profile</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>My Profile</Typography>
       </Stack>
 
       <Card variant="outlined">
         <CardContent sx={{ p: 3 }}>
-          {/* Avatar + email */}
-          <Stack alignItems="center" sx={{ mb: 3, gap: 1 }}>
+          {/* Avatar */}
+          <Stack sx={{ mb: 3, gap: 1, alignItems: "center" }}>
             {isLoading ? (
               <Skeleton variant="circular" width={72} height={72} />
             ) : (
@@ -86,8 +84,8 @@ export default function ProfilePage() {
               <Skeleton variant="text" width={160} />
             ) : (
               <>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {profile?.firstName} {profile?.lastName}
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  {profile?.fullName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">{profile?.email}</Typography>
                 {profile?.unitNumber && (
@@ -106,24 +104,14 @@ export default function ProfilePage() {
 
           <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
             <Grid container spacing={2.5}>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid size={12}>
                 <TextField
                   fullWidth
-                  label="First Name"
-                  error={!!errors.firstName}
-                  helperText={errors.firstName?.message}
+                  label="Full Name"
+                  error={!!errors.fullName}
+                  helperText={errors.fullName?.message}
                   disabled={isLoading}
-                  {...register("firstName")}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Last Name"
-                  error={!!errors.lastName}
-                  helperText={errors.lastName?.message}
-                  disabled={isLoading}
-                  {...register("lastName")}
+                  {...register("fullName")}
                 />
               </Grid>
               <Grid size={12}>

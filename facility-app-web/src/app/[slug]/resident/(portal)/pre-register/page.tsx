@@ -49,9 +49,9 @@ export default function PreRegisterPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 3 }}>
+      <Stack direction="row" sx={{ gap: 1, mb: 3, alignItems: "center" }}>
         <IconifyIcon icon="material-symbols:person-add-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-        <Typography variant="h5" fontWeight={700}>Pre-register a Visitor</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Pre-register a Visitor</Typography>
       </Stack>
 
       <Card variant="outlined">
@@ -116,7 +116,7 @@ export default function PreRegisterPage() {
                 />
               </Grid>
               <Grid size={12}>
-                <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
                   <Button variant="outlined" color="neutral" onClick={() => router.back()}>
                     Cancel
                   </Button>

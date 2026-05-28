@@ -53,17 +53,15 @@ export default function ResidentDashboardPage() {
       {/* Header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        alignItems={{ sm: "center" }}
-        sx={{ mb: 3, gap: 2 }}
+        sx={{ mb: 3, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}
       >
         <Box>
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 0.5 }}>
+          <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
             <IconifyIcon
               icon="material-symbols:dashboard-outline-rounded"
               sx={{ fontSize: 24, color: "primary.main" }}
             />
-            <Typography variant="h5" fontWeight={700}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
               My Dashboard
             </Typography>
           </Stack>
@@ -95,7 +93,7 @@ export default function ResidentDashboardPage() {
       </Stack>
 
       {/* Quick action chips */}
-      <Stack direction="row" flexWrap="wrap" sx={{ gap: 1, mb: 3 }}>
+      <Stack direction="row" sx={{ gap: 1, mb: 3, flexWrap: "wrap" }}>
         {NAV_ACTIONS.map((item) => (
           <Button
             key={item.href}
@@ -145,7 +143,7 @@ export default function ResidentDashboardPage() {
                   </>
                 ) : (
                   <>
-                    <Typography variant="h4" fontWeight={700} sx={{ color: stat.color }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color }}>
                       {stat.value ?? 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -161,7 +159,7 @@ export default function ResidentDashboardPage() {
 
       {/* Notification pills */}
       {!isLoading && stats && (stats.pendingParcels > 0 || stats.openMaintenance > 0) && (
-        <Stack direction="row" flexWrap="wrap" sx={{ gap: 1, mb: 3 }}>
+        <Stack direction="row" sx={{ gap: 1, mb: 3, flexWrap: "wrap" }}>
           {stats.pendingParcels > 0 && (
             <Alert
               severity="info"
@@ -189,16 +187,14 @@ export default function ResidentDashboardPage() {
       <Card variant="outlined">
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ px: 2.5, py: 1.5 }}
+          sx={{ px: 2.5, py: 1.5, justifyContent: "space-between", alignItems: "center" }}
         >
-          <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
+          <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
             <IconifyIcon
               icon="material-symbols:event-upcoming-outline-rounded"
               sx={{ fontSize: 20, color: "primary.main" }}
             />
-            <Typography variant="subtitle1" fontWeight={600}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Upcoming Visits
             </Typography>
           </Stack>
@@ -216,7 +212,7 @@ export default function ResidentDashboardPage() {
             ))}
           </Box>
         ) : !stats?.upcomingVisitsList?.length ? (
-          <Stack alignItems="center" sx={{ py: 5, gap: 1 }}>
+          <Stack sx={{ py: 5, gap: 1, alignItems: "center" }}>
             <IconifyIcon
               icon="material-symbols:event-busy-outline-rounded"
               sx={{ fontSize: 40, color: "text.disabled" }}
@@ -241,12 +237,10 @@ export default function ResidentDashboardPage() {
                 {i > 0 && <Divider />}
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ px: 2.5, py: 1.5 }}
+                  sx={{ px: 2.5, py: 1.5, justifyContent: "space-between", alignItems: "center" }}
                 >
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {visit.visitorName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">

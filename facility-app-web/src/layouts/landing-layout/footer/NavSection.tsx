@@ -73,7 +73,7 @@ const NavSection = () => {
 
           <Grid container spacing={3} size={{ xs: 12, sm: 7, md: 5, lg: 4 }}>
             <Grid size={{ xs: 12 }}>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700 }}>
                 Follow us
               </Typography>
               <SocialIcons />

@@ -19,9 +19,7 @@ export default function ComingSoon({
 }: ComingSoonProps) {
   return (
     <Stack
-      alignItems="center"
-      justifyContent="center"
-      sx={{ minHeight: 320, py: 8, px: 3, textAlign: "center" }}
+      sx={{ minHeight: 320, py: 8, px: 3, textAlign: "center", alignItems: "center", justifyContent: "center" }}
     >
       <Box
         sx={{
@@ -40,7 +38,7 @@ export default function ComingSoon({
           sx={{ fontSize: 40, color: "primary.main" }}
         />
       </Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, mb: 3 }}>

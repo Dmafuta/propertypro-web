@@ -39,9 +39,9 @@ export default function VisitsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 3 }}>
+      <Stack direction="row" sx={{ gap: 1, mb: 3, alignItems: "center" }}>
         <IconifyIcon icon="material-symbols:calendar-month-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-        <Typography variant="h5" fontWeight={700}>My Visits</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>My Visits</Typography>
       </Stack>
 
       <Card variant="outlined">
@@ -62,7 +62,7 @@ export default function VisitsPage() {
             ))}
           </Box>
         ) : !visits?.length ? (
-          <Stack alignItems="center" sx={{ py: 6, gap: 1 }}>
+          <Stack sx={{ py: 6, gap: 1, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:event-busy-outline-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
             <Typography variant="body2" color="text.disabled">No visits found.</Typography>
           </Stack>
@@ -71,9 +71,9 @@ export default function VisitsPage() {
             {visits.map((visit, i) => (
               <Box key={visit.id}>
                 {i > 0 && <Divider />}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.5, py: 2 }}>
+                <Stack direction="row" sx={{ px: 2.5, py: 2, justifyContent: "space-between", alignItems: "center" }}>
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>{visit.visitorName}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{visit.visitorName}</Typography>
                     <Typography variant="caption" color="text.secondary">{visit.purpose}</Typography>
                     {visit.visitorPhone && (
                       <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
@@ -81,7 +81,7 @@ export default function VisitsPage() {
                       </Typography>
                     )}
                   </Box>
-                  <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
+                  <Stack direction="row" sx={{ gap: 2, alignItems: "center" }}>
                     <Box sx={{ textAlign: "right" }}>
                       <Typography variant="caption" color="text.secondary">
                         {dayjs(visit.scheduledAt).format("DD MMM YYYY")}

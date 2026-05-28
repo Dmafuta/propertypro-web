@@ -88,8 +88,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           {/* Property name */}
           <Typography
             variant="h6"
-            fontWeight={700}
-            sx={{ flexShrink: 0, color: "primary.main", fontSize: "1rem" }}
+            sx={{ flexShrink: 0, color: "primary.main", fontSize: "1rem", fontWeight: 700 }}
           >
             {tenant.name}
           </Typography>
@@ -120,7 +119,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
             ))}
           </Stack>
 
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, ml: "auto" }}>
+          <Stack direction="row" sx={{ gap: 1, ml: "auto", alignItems: "center" }}>
             <ThemeToggler type="slim" />
 
             <Tooltip title={session?.user?.email ?? ""}>
@@ -166,7 +165,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
         PaperProps={{ sx: { width: 260 } }}
       >
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={700} color="primary.main">
+          <Typography variant="h6" sx={{ fontWeight: 700 }} color="primary.main">
             {tenant.name}
           </Typography>
           <Typography variant="caption" color="text.secondary">

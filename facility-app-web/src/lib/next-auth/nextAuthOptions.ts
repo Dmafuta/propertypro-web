@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import paths, { apiEndpoints } from 'routes/paths';
 import axiosInstance from 'services/axios/axiosInstance';
+import { getTenantSlug } from 'services/axios/tenantSlug';
 
 export interface FacilityUser {
   id: string;
@@ -52,17 +53,27 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials): Promise<any> {
         if (!credentials) return null;
         const slug      = credentials.tenantSlug ?? '';
-        const staffOnly = credentials.staffOnly === 'true';
+        const staffOnly = credentials.staffOnly !== 'false'; // default to staff
         try {
-          // In dev: use bypass endpoint so 2FA is skipped during local testing.
-          // Use absolute URL so axios doesn't prepend the /api base path.
-          const loginPath =
-            process.env.NODE_ENV === 'development' ? `${backendUrl}/dev/login` : apiEndpoints.login;
-          const data: any = await axiosInstance.post(
-            loginPath,
-            { email: credentials.email, password: credentials.password, staffOnly },
-            { headers: { 'X-Tenant-Slug': slug } },
-          );
+          // Route to the correct endpoint. Use absolute URLs so axios doesn't
+          // double-prepend the /api base path.
+          let loginPath: string;
+          let body: Record<string, unknown>;
+
+          if (slug === 'platform') {
+            loginPath = `${backendUrl}/api/auth/superadmin/login`;
+            body = { email: credentials.email, password: credentials.password };
+          } else if (!staffOnly) {
+            loginPath = `${backendUrl}/api/auth/resident/login`;
+            body = { slug, email: credentials.email, password: credentials.password };
+          } else {
+            loginPath = `${backendUrl}/api/auth/login`;
+            body = { slug, email: credentials.email, password: credentials.password };
+          }
+
+          const data: any = await axiosInstance.post(loginPath, body, {
+            headers: { 'X-Tenant-Slug': slug },
+          });
           // 2FA required — signal the client to redirect to the OTP page
           if (data?.requiresTwoFactor) {
             throw new Error(`2FA_REQUIRED|${data.tempToken}|${data.maskedPhone}`);
@@ -126,7 +137,7 @@ export const authOptions: NextAuthOptions = {
           const data: ApiTokenResponse = await axiosInstance.post(
             apiEndpoints.register,
             { fullName: credentials.name, email: credentials.email, password: credentials.password },
-            { headers: { 'X-Tenant-Slug': tenantSlug } },
+            { headers: { 'X-Tenant-Slug': getTenantSlug() ?? '' } },
           );
           return {
             id: data.user.id,

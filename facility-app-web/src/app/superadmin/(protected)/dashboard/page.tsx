@@ -39,11 +39,11 @@ export default function SuperAdminDashboardPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mb: 4, gap: 2 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}>
         <Box>
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 0.5 }}>
+          <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:admin-panel-settings-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-            <Typography variant="h5" fontWeight={700}>Platform Overview</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>Platform Overview</Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
             All facilities registered on PropertyPro
@@ -64,12 +64,12 @@ export default function SuperAdminDashboardPage() {
           <Grid key={label} size={{ xs: 6, sm: 4, md: "auto" }} sx={{ flexGrow: 1 }}>
             <Card variant="outlined" sx={{ height: "100%" }}>
               <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start" }}>
                   <Box>
                     {isLoading ? (
                       <Skeleton variant="text" width={48} height={40} />
                     ) : (
-                      <Typography variant="h4" fontWeight={700} sx={{ color, lineHeight: 1 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color, lineHeight: 1 }}>
                         {value}
                       </Typography>
                     )}
@@ -95,10 +95,10 @@ export default function SuperAdminDashboardPage() {
 
       {/* Recent facilities */}
       <Card variant="outlined">
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.5, py: 1.5 }}>
-          <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
+        <Stack direction="row" sx={{ px: 2.5, py: 1.5, justifyContent: "space-between", alignItems: "center" }}>
+          <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:schedule-outline-rounded" sx={{ fontSize: 20, color: "primary.main" }} />
-            <Typography variant="subtitle1" fontWeight={600}>Recently Added</Typography>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Recently Added</Typography>
           </Stack>
           <Button
             size="small"
@@ -116,7 +116,7 @@ export default function SuperAdminDashboardPage() {
             {[1, 2, 3].map((i) => <Skeleton key={i} variant="text" height={56} />)}
           </Box>
         ) : !recent.length ? (
-          <Stack alignItems="center" sx={{ py: 5, gap: 1 }}>
+          <Stack sx={{ py: 5, gap: 1, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:apartment-outline-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
             <Typography variant="body2" color="text.disabled">No facilities yet.</Typography>
           </Stack>
@@ -124,12 +124,12 @@ export default function SuperAdminDashboardPage() {
           recent.map((t, i) => (
             <Box key={t.id}>
               {i > 0 && <Divider />}
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.5, py: 1.5, gap: 2 }}>
+              <Stack direction="row" sx={{ px: 2.5, py: 1.5, gap: 2, justifyContent: "space-between", alignItems: "center" }}>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>{t.name}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{t.name}</Typography>
                   <Typography variant="caption" color="text.secondary">{t.slug}</Typography>
                 </Box>
-                <Stack direction="row" alignItems="center" sx={{ gap: 1, flexShrink: 0 }}>
+                <Stack direction="row" sx={{ gap: 1, flexShrink: 0, alignItems: "center" }}>
                   <Chip
                     label={t.plan === 1 ? "Professional" : "Starter"}
                     size="small"
@@ -146,6 +146,7 @@ export default function SuperAdminDashboardPage() {
                     {dayjs(t.createdAt).format("DD MMM YYYY")}
                   </Typography>
                 </Stack>
+
               </Stack>
             </Box>
           ))

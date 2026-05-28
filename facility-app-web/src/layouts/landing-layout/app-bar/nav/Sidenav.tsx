@@ -50,7 +50,7 @@ const Sidenav = ({ menus }: SidenavProps) => {
               >
                 <ListItemText
                   primary={
-                    <Typography variant="body2" fontWeight={500}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
                       {menu.label}
                     </Typography>
                   }

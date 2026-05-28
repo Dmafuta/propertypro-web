@@ -54,12 +54,11 @@ const StatsBar = () => {
               >
                 <Typography
                   variant="h3"
-                  fontWeight={800}
-                  sx={{ color: "primary.main", lineHeight: 1, mb: 0.5 }}
+                  sx={{ fontWeight: 800, color: "primary.main", lineHeight: 1, mb: 0.5 }}
                 >
                   {stat.value}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                   {stat.label}
                 </Typography>
               </Stack>

@@ -64,10 +64,10 @@ export default function VehiclesPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
+      <Stack direction="row" sx={{ mb: 3, justifyContent: "space-between", alignItems: "center" }}>
+        <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
           <IconifyIcon icon="material-symbols:directions-car-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-          <Typography variant="h5" fontWeight={700}>My Vehicles</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>My Vehicles</Typography>
         </Stack>
         <Button variant="contained" startIcon={<IconifyIcon icon="material-symbols:add-rounded" />} onClick={() => setOpen(true)}>
           Add Vehicle
@@ -80,7 +80,7 @@ export default function VehiclesPage() {
             {[1, 2].map((i) => <Skeleton key={i} variant="rectangular" height={72} sx={{ mb: 1, borderRadius: 1 }} />)}
           </Box>
         ) : !vehicles?.length ? (
-          <Stack alignItems="center" sx={{ py: 6, gap: 1 }}>
+          <Stack sx={{ py: 6, gap: 1, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:directions-car-outline-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
             <Typography variant="body2" color="text.disabled">No vehicles registered.</Typography>
             <Button size="small" variant="soft" color="primary" onClick={() => setOpen(true)}>Register a vehicle</Button>
@@ -89,17 +89,17 @@ export default function VehiclesPage() {
           vehicles.map((v, i) => (
             <Box key={v.id}>
               {i > 0 && <Divider />}
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.5, py: 2 }}>
-                <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
+              <Stack direction="row" sx={{ px: 2.5, py: 2, justifyContent: "space-between", alignItems: "center" }}>
+                <Stack direction="row" sx={{ gap: 2, alignItems: "center" }}>
                   <IconifyIcon icon="material-symbols:directions-car-outline-rounded" sx={{ fontSize: 28, color: "text.secondary" }} />
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>{v.licensePlate}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{v.licensePlate}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {[v.colour, v.make, v.model].filter(Boolean).join(" · ") || "No details"}
                     </Typography>
                   </Box>
                 </Stack>
-                <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
+                <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
                   {v.tagNumber && (
                     <Chip label={`TAG: ${v.tagNumber}`} size="small" variant="outlined" />
                   )}

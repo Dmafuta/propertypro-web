@@ -5,9 +5,40 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import IconifyIcon from "components/base/IconifyIcon";
+import AnalyticKPI from "components/sections/dashboards/analytics/kpi/AnalyticKPI";
+import { useListTenants } from "services/swr/api-hooks/useSuperAdminApi";
+import type { AnalyticKPIData } from "types/analytics";
+
+// Chart placeholder — matches Aurora's Paper card style
+const ChartPlaceholder = ({
+  title,
+  description,
+  height = 296,
+}: {
+  title: string;
+  description: string;
+  height?: number;
+}) => (
+  <Paper sx={{ height: 1, p: { xs: 3, md: 5 } }}>
+    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+        {title}
+      </Typography>
+      <Chip label="Coming soon" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+    </Stack>
+    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      {description}
+    </Typography>
+    <Skeleton variant="rounded" height={height} sx={{ borderRadius: 2 }} />
+  </Paper>
+);
 
 const SECTIONS = [
   {
@@ -43,8 +74,43 @@ const SECTIONS = [
 ];
 
 export default function SuperAdminAnalyticsPage() {
+  const { data: tenants, isLoading } = useListTenants();
+
+  const total        = tenants?.length ?? 0;
+  const active       = tenants?.filter((t) => t.isActive).length ?? 0;
+  const professional = tenants?.filter((t) => t.plan === 1).length ?? 0;
+  const starter      = tenants?.filter((t) => t.plan === 0).length ?? 0;
+
+  const kpis: AnalyticKPIData[] = [
+    {
+      title: "Total Facilities",
+      value: isLoading ? "—" : total,
+      icon: { name: "material-symbols:apartment-outline-rounded", color: "primary" },
+      link: { prefix: "Manage in", text: "Facilities", url: "/superadmin/tenants" },
+    },
+    {
+      title: "Active Facilities",
+      value: isLoading ? "—" : active,
+      icon: { name: "material-symbols:check-circle-outline-rounded", color: "success" },
+      link: { prefix: "View all in", text: "Facilities", url: "/superadmin/tenants" },
+    },
+    {
+      title: "Professional Plan",
+      value: isLoading ? "—" : professional,
+      icon: { name: "material-symbols:workspace-premium-outline-rounded", color: "warning" },
+      link: { prefix: "Manage plans in", text: "Facilities", url: "/superadmin/tenants" },
+    },
+    {
+      title: "Starter Plan",
+      value: isLoading ? "—" : starter,
+      icon: { name: "material-symbols:star-outline-rounded", color: "info" },
+      link: { prefix: "Manage plans in", text: "Facilities", url: "/superadmin/tenants" },
+    },
+  ];
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header */}
       <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
         <IconifyIcon icon="material-symbols:bar-chart-4-bars-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
         <Typography variant="h5" sx={{ fontWeight: 700 }}>Platform Analytics</Typography>
@@ -53,6 +119,57 @@ export default function SuperAdminAnalyticsPage() {
         Aggregate health and usage metrics across all registered facilities.
       </Typography>
 
+      {/* KPI Cards — live data */}
+      <Grid container sx={{ mb: 3 }}>
+        {kpis.map((kpi) => (
+          <Grid key={kpi.title} size={{ xs: 6, md: 3 }}>
+            <AnalyticKPI kpi={kpi} />
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Chart row 1 — placeholders */}
+      <Grid container sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <ChartPlaceholder
+            title="Visitor Volume Over Time"
+            description="Weekly and monthly visitors logged across all facilities — tabs for total, check-ins, and no-shows."
+            height={285}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <ChartPlaceholder
+            title="New Facilities Over Time"
+            description="Tenant signup trend — new facilities registered per month."
+            height={285}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Chart row 2 — placeholders */}
+      <Grid container sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <ChartPlaceholder
+            title="Plan Breakdown"
+            description="Proportion of Starter vs Professional tenants and conversion trend over time."
+            height={220}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <ChartPlaceholder
+            title="Top Facilities by Activity"
+            description="Most active facilities ranked by visitor count, maintenance requests, and logins in the last 30 days."
+            height={220}
+          />
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ mb: 4 }} />
+
+      {/* Scaffold sections — kept until charts are live */}
+      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        Planned Sections
+      </Typography>
       <Stack sx={{ gap: 2 }}>
         {SECTIONS.map((s) => (
           <Card key={s.title} variant="outlined">

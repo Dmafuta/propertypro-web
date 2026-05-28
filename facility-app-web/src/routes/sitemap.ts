@@ -6,7 +6,7 @@ export interface SubMenuItem {
   pathName: string;
   key?: string;
   selectionPrefix?: string;
-  path?: string;
+  path?: string | ((slug: string) => string);
   active?: boolean;
   icon?: string;
   iconSx?: SxProps;

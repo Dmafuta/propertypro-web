@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -8,26 +8,25 @@ import * as yup from "yup";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
-import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
-import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { DataGrid, gridClasses, type GridColDef } from "@mui/x-data-grid";
 import dayjs from "dayjs";
 import IconifyIcon from "components/base/IconifyIcon";
+import DataGridPagination from "components/pagination/DataGridPagination";
 import {
   useListTenants,
   useCreateTenant,
@@ -38,134 +37,62 @@ import {
 } from "services/swr/api-hooks/useSuperAdminApi";
 
 const schema = yup.object({
-  name: yup.string().required("Facility name is required"),
-  slug: yup
-    .string()
-    .matches(/^[a-z0-9-]+$/, "Lowercase letters, numbers and hyphens only")
-    .required("Organisation code is required"),
+  name:         yup.string().required("Facility name is required"),
+  slug:         yup.string().matches(/^[a-z0-9-]+$/, "Lowercase letters, numbers and hyphens only").required("Organisation code is required"),
   contactEmail: yup.string().email("Invalid email").required("Contact email is required"),
 });
 
-function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => void }) {
+function ActionCell({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => void }) {
   const router = useRouter();
   const { trigger: toggle, isMutating: toggling } = useToggleTenant(tenant.id);
   const { trigger: updatePlan, isMutating: updatingPlan } = useUpdateTenantPlan(tenant.id);
 
-  const handleToggle = async () => {
-    await toggle();
-    onMutate();
-  };
-
-  const handlePlanChange = async (plan: number) => {
-    await updatePlan({ plan });
-    onMutate();
-  };
-
   return (
-    <Box>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        sx={{ px: 2.5, py: 2, gap: 2, justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" } }}
+    <Stack direction="row" sx={{ gap: 0.5, alignItems: "center", height: "100%" }}>
+      <Select
+        size="small"
+        value={tenant.plan}
+        disabled={updatingPlan}
+        onChange={async (e) => { await updatePlan({ plan: Number(e.target.value) }); onMutate(); }}
+        sx={{ minWidth: 130, fontSize: "0.8rem" }}
       >
-        {/* Identity */}
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
-            <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-              {tenant.name}
-            </Typography>
-            <Chip
-              label={tenant.isActive ? "Active" : "Inactive"}
-              size="small"
-              color={tenant.isActive ? "success" : "default"}
-              variant="outlined"
-            />
-          </Stack>
-          <Stack direction="row" sx={{ gap: 0.5, mt: 0.25, alignItems: "center" }}>
-            <Typography variant="caption" color="text.secondary">
-              /{tenant.slug}
-            </Typography>
-            {tenant.contactEmail && (
-              <Typography variant="caption" color="text.disabled">
-                &nbsp;·&nbsp;{tenant.contactEmail}
-              </Typography>
-            )}
-          </Stack>
-          <Typography variant="caption" color="text.disabled" sx={{ display: "block" }}>
-            Created {dayjs(tenant.createdAt).format("DD MMM YYYY")}
-          </Typography>
-        </Box>
+        <MenuItem value={0}>Starter</MenuItem>
+        <MenuItem value={1}>Professional</MenuItem>
+      </Select>
 
-        {/* Plan selector + actions */}
-        <Stack direction="row" sx={{ gap: 1.5, flexShrink: 0, alignItems: "center" }}>
-          <Select
-            size="small"
-            value={tenant.plan}
-            disabled={updatingPlan}
-            onChange={(e) => handlePlanChange(Number(e.target.value))}
-            sx={{ minWidth: 130 }}
-          >
-            <MenuItem value={0}>Starter</MenuItem>
-            <MenuItem value={1}>Professional</MenuItem>
-          </Select>
+      <Tooltip title={tenant.isActive ? "Deactivate" : "Activate"}>
+        <span>
+          <IconButton size="small" disabled={toggling} color={tenant.isActive ? "error" : "success"}
+            onClick={async () => { await toggle(); onMutate(); }}>
+            <IconifyIcon icon={tenant.isActive ? "material-symbols:block-rounded" : "material-symbols:check-circle-outline-rounded"} sx={{ fontSize: 18 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
 
-          <Tooltip title={tenant.isActive ? "Deactivate" : "Activate"}>
-            <IconButton
-              size="small"
-              disabled={toggling}
-              onClick={handleToggle}
-              color={tenant.isActive ? "error" : "success"}
-            >
-              <IconifyIcon
-                icon={
-                  tenant.isActive
-                    ? "material-symbols:block-rounded"
-                    : "material-symbols:check-circle-outline-rounded"
-                }
-                sx={{ fontSize: 20 }}
-              />
-            </IconButton>
-          </Tooltip>
+      <Tooltip title="View details">
+        <IconButton size="small" onClick={() => router.push(`/superadmin/tenants/${tenant.id}`)}>
+          <IconifyIcon icon="material-symbols:arrow-forward-rounded" sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
 
-          <Tooltip title="View details">
-            <IconButton
-              size="small"
-              onClick={() => router.push(`/superadmin/tenants/${tenant.id}`)}
-            >
-              <IconifyIcon icon="material-symbols:arrow-forward-rounded" sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Open portal">
-            <IconButton
-              size="small"
-              component="a"
-              href={`/${tenant.slug}/login`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <IconifyIcon icon="material-symbols:open-in-new-rounded" sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
-      <Divider />
-    </Box>
+      <Tooltip title="Open portal">
+        <IconButton size="small" component="a" href={`/${tenant.slug}/login`} target="_blank" rel="noopener noreferrer">
+          <IconifyIcon icon="material-symbols:open-in-new-rounded" sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
+    </Stack>
   );
 }
 
 export default function SuperAdminTenantsPage() {
   const { data: tenants, isLoading, mutate } = useListTenants();
   const { trigger: createTenant, isMutating: creating } = useCreateTenant();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]               = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch]           = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateTenantPayload>({ resolver: yupResolver(schema) });
+  const { register, handleSubmit, reset, formState: { errors } } =
+    useForm<CreateTenantPayload>({ resolver: yupResolver(schema) });
 
   const onSubmit = async (data: CreateTenantPayload) => {
     setCreateError(null);
@@ -179,129 +106,181 @@ export default function SuperAdminTenantsPage() {
     }
   };
 
-  const filtered = (tenants ?? []).filter(
-    (t) =>
+  const rows = useMemo(() =>
+    (tenants ?? []).filter((t) =>
       t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.slug.toLowerCase().includes(search.toLowerCase())
+    ),
+    [tenants, search],
   );
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Stack direction={{ xs: "column", sm: "row" }} sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}>
-        <Box>
-          <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
-            <IconifyIcon icon="material-symbols:apartment-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>Facilities</Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Manage all registered facilities and their plans.
+  const columns: GridColDef<TenantItem>[] = useMemo(() => [
+    {
+      field: "name",
+      headerName: "Facility",
+      headerClassName: "name-header",
+      cellClassName: "name-cell",
+      minWidth: 220,
+      flex: 1,
+      renderCell: (params) => (
+        <Stack sx={{ gap: 0.25, justifyContent: "center", height: "100%" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+            {params.row.name}
           </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
-          onClick={() => { setCreateError(null); reset(); setOpen(true); }}
-        >
-          New Facility
-        </Button>
-      </Stack>
-
-      {/* Search */}
-      <TextField
-        placeholder="Search by name or org code…"
-        size="small"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mb: 2, maxWidth: 360 }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 18, color: "text.secondary" }} />
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
-
-      {/* Table */}
-      <Card variant="outlined">
-        {/* Column header */}
-        <Stack
-          direction="row"
-          sx={{ px: 2.5, py: 1.25, bgcolor: "action.hover", justifyContent: "space-between", alignItems: "center" }}
-        >
-          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>
-            Facility
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>
-            Plan / Actions
+          <Typography variant="caption" color="text.secondary">
+            /{params.row.slug}
+            {params.row.contactEmail ? ` · ${params.row.contactEmail}` : ""}
           </Typography>
         </Stack>
-        <Divider />
+      ),
+    },
+    {
+      field: "isActive",
+      headerName: "Status",
+      headerClassName: "status-header",
+      cellClassName: "status-cell",
+      width: 110,
+      renderCell: (params) => (
+        <Chip
+          label={params.row.isActive ? "Active" : "Inactive"}
+          size="small"
+          color={params.row.isActive ? "success" : "default"}
+          variant="soft"
+        />
+      ),
+    },
+    {
+      field: "plan",
+      headerName: "Plan",
+      headerClassName: "plan-header",
+      cellClassName: "plan-cell",
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.row.plan === 1 ? "Professional" : "Starter"}
+          size="small"
+          color={params.row.plan === 1 ? "warning" : "default"}
+          variant="soft"
+        />
+      ),
+    },
+    {
+      field: "createdAt",
+      headerName: "Created",
+      headerClassName: "created-header",
+      cellClassName: "created-cell",
+      width: 130,
+      renderCell: (params) => (
+        <Typography variant="caption" color="text.secondary">
+          {dayjs(params.row.createdAt).format("DD MMM YYYY")}
+        </Typography>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "",
+      headerClassName: "action-header",
+      cellClassName: "action-cell",
+      sortable: false,
+      width: 280,
+      renderCell: (params) => <ActionCell tenant={params.row} onMutate={mutate} />,
+    },
+  ], [mutate]);
 
-        {isLoading ? (
-          <Box sx={{ p: 2 }}>
-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} variant="text" height={64} />)}
-          </Box>
-        ) : !filtered.length ? (
-          <Stack sx={{ py: 6, gap: 1, alignItems: "center" }}>
-            <IconifyIcon icon="material-symbols:search-off-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
-            <Typography variant="body2" color="text.disabled">
-              {search ? "No facilities match your search." : "No facilities registered yet."}
-            </Typography>
+  return (
+    <Grid container>
+      <Grid size={12}>
+        <Paper sx={{ p: { xs: 3, md: 5 } }}>
+          {/* Header */}
+          <Stack direction={{ xs: "column", sm: "row" }} sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}>
+            <Box>
+              <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
+                <IconifyIcon icon="material-symbols:apartment-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>Facilities</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Manage all registered facilities and their plans.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+              onClick={() => { setCreateError(null); reset(); setOpen(true); }}
+            >
+              New Facility
+            </Button>
           </Stack>
-        ) : (
-          filtered.map((t) => (
-            <TenantRow key={t.id} tenant={t} onMutate={mutate} />
-          ))
-        )}
-      </Card>
 
-      <Typography variant="caption" color="text.disabled" sx={{ mt: 1.5, display: "block" }}>
-        {filtered.length} of {tenants?.length ?? 0} facility{(tenants?.length ?? 0) !== 1 ? "ies" : "y"}
-      </Typography>
+          {/* Search */}
+          <TextField
+            placeholder="Search by name or org code…"
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ mb: 3, maxWidth: 360 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 18, color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {/* DataGrid */}
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            rowHeight={64}
+            loading={isLoading}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            pageSizeOptions={[10, 25, 50]}
+            disableRowSelectionOnClick
+            slots={{
+              basePagination: (props) => <DataGridPagination showFullPagination {...props} />,
+            }}
+            sx={({ spacing }) => ({
+              border: 0,
+              [`& .${gridClasses.columnHeaders}`]: {
+                [`& .${gridClasses.columnHeader}`]: {
+                  "&:not(.action-header)": { p: `0 ${spacing(1.25)}` },
+                  "&.action-header": { pl: spacing(1.25) },
+                },
+              },
+              [`& .${gridClasses.row}`]: {
+                [`& .${gridClasses.cell}`]: {
+                  "&.aurora-data-grid-cell": {
+                    "&:not(.action-cell)": { p: `0 ${spacing(1.25)}` },
+                    "&.action-cell": { pl: spacing(1.25) },
+                  },
+                },
+              },
+            })}
+          />
+        </Paper>
+      </Grid>
 
       {/* Create dialog */}
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>New Facility</DialogTitle>
         <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
-            {createError && (
-              <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>
-            )}
+            {createError && <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>}
             <Grid container rowSpacing={2.5}>
               <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Facility Name"
-                  placeholder="e.g. Greenview Estates"
-                  error={!!errors.name}
-                  helperText={errors.name?.message}
-                  {...register("name")}
-                />
+                <TextField fullWidth label="Facility Name" placeholder="e.g. Greenview Estates"
+                  error={!!errors.name} helperText={errors.name?.message} {...register("name")} />
               </Grid>
               <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Organisation Code (slug)"
-                  placeholder="e.g. greenview"
-                  error={!!errors.slug}
-                  helperText={errors.slug?.message ?? "Lowercase letters, numbers and hyphens. Used in login URLs."}
-                  {...register("slug")}
-                  inputProps={{ style: { textTransform: "lowercase" } }}
-                />
+                <TextField fullWidth label="Organisation Code (slug)" placeholder="e.g. greenview"
+                  error={!!errors.slug} helperText={errors.slug?.message ?? "Lowercase letters, numbers and hyphens. Used in login URLs."}
+                  {...register("slug")} inputProps={{ style: { textTransform: "lowercase" } }} />
               </Grid>
               <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Contact Email"
-                  type="email"
-                  error={!!errors.contactEmail}
-                  helperText={errors.contactEmail?.message}
-                  {...register("contactEmail")}
-                />
+                <TextField fullWidth label="Contact Email" type="email"
+                  error={!!errors.contactEmail} helperText={errors.contactEmail?.message} {...register("contactEmail")} />
               </Grid>
             </Grid>
           </DialogContent>
@@ -311,6 +290,6 @@ export default function SuperAdminTenantsPage() {
           </DialogActions>
         </Box>
       </Dialog>
-    </Container>
+    </Grid>
   );
 }

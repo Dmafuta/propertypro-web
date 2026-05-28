@@ -29,8 +29,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Overview",   icon: "material-symbols:dashboard-outline-rounded",          href: "/superadmin/dashboard" },
-  { label: "Facilities", icon: "material-symbols:apartment-outline-rounded",           href: "/superadmin/tenants"   },
+  { label: "Overview",       icon: "material-symbols:dashboard-outline-rounded",           href: "/superadmin/dashboard"      },
+  { label: "Facilities",     icon: "material-symbols:apartment-outline-rounded",            href: "/superadmin/tenants"        },
+  { label: "Analytics",      icon: "material-symbols:bar-chart-4-bars-rounded",             href: "/superadmin/analytics"      },
+  { label: "Audit Log",      icon: "material-symbols:manage-search-rounded",               href: "/superadmin/audit"          },
+  { label: "Announcements",  icon: "material-symbols:campaign-outline-rounded",             href: "/superadmin/announcements"  },
+  { label: "Settings",       icon: "material-symbols:settings-outline-rounded",             href: "/superadmin/settings"       },
 ];
 
 export default function SuperAdminLayout({ children }: { children: ReactNode }) {
@@ -77,12 +81,12 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
           </IconButton>
 
           {/* Brand */}
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, flexShrink: 0 }}>
+          <Stack direction="row" sx={{ gap: 1, flexShrink: 0, alignItems: "center" }}>
             <IconifyIcon
               icon="material-symbols:admin-panel-settings-outline-rounded"
               sx={{ fontSize: 22, color: "primary.main" }}
             />
-            <Typography variant="h6" fontWeight={700} sx={{ fontSize: "1rem" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
               PropertyPro
             </Typography>
             <Chip label="Platform Admin" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
@@ -111,7 +115,7 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
             ))}
           </Stack>
 
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, ml: "auto" }}>
+          <Stack direction="row" sx={{ gap: 1, ml: "auto", alignItems: "center" }}>
             <ThemeToggler type="slim" />
 
             <Tooltip title={session?.user?.email ?? ""}>
@@ -141,7 +145,7 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
       {/* Mobile drawer */}
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: 260 } }}>
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={700} color="primary.main">PropertyPro</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }} color="primary.main">PropertyPro</Typography>
           <Typography variant="caption" color="text.secondary">Platform Admin</Typography>
         </Box>
         <Divider />

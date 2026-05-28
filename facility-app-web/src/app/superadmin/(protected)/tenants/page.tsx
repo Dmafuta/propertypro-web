@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -46,6 +47,7 @@ const schema = yup.object({
 });
 
 function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => void }) {
+  const router = useRouter();
   const { trigger: toggle, isMutating: toggling } = useToggleTenant(tenant.id);
   const { trigger: updatePlan, isMutating: updatingPlan } = useUpdateTenantPlan(tenant.id);
 
@@ -63,14 +65,12 @@ function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => v
     <Box>
       <Stack
         direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        alignItems={{ xs: "flex-start", sm: "center" }}
-        sx={{ px: 2.5, py: 2, gap: 2 }}
+        sx={{ px: 2.5, py: 2, gap: 2, justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" } }}
       >
         {/* Identity */}
         <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
-            <Typography variant="body2" fontWeight={700} noWrap>
+          <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
+            <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
               {tenant.name}
             </Typography>
             <Chip
@@ -80,7 +80,7 @@ function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => v
               variant="outlined"
             />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ gap: 0.5, mt: 0.25 }}>
+          <Stack direction="row" sx={{ gap: 0.5, mt: 0.25, alignItems: "center" }}>
             <Typography variant="caption" color="text.secondary">
               /{tenant.slug}
             </Typography>
@@ -96,7 +96,7 @@ function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => v
         </Box>
 
         {/* Plan selector + actions */}
-        <Stack direction="row" alignItems="center" sx={{ gap: 1.5, flexShrink: 0 }}>
+        <Stack direction="row" sx={{ gap: 1.5, flexShrink: 0, alignItems: "center" }}>
           <Select
             size="small"
             value={tenant.plan}
@@ -123,6 +123,15 @@ function TenantRow({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => v
                 }
                 sx={{ fontSize: 20 }}
               />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="View details">
+            <IconButton
+              size="small"
+              onClick={() => router.push(`/superadmin/tenants/${tenant.id}`)}
+            >
+              <IconifyIcon icon="material-symbols:arrow-forward-rounded" sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
 
@@ -179,11 +188,11 @@ export default function SuperAdminTenantsPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mb: 4, gap: 2 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}>
         <Box>
-          <Stack direction="row" alignItems="center" sx={{ gap: 1, mb: 0.5 }}>
+          <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:apartment-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
-            <Typography variant="h5" fontWeight={700}>Facilities</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>Facilities</Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
             Manage all registered facilities and their plans.
@@ -221,14 +230,12 @@ export default function SuperAdminTenantsPage() {
         {/* Column header */}
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ px: 2.5, py: 1.25, bgcolor: "action.hover" }}
+          sx={{ px: 2.5, py: 1.25, bgcolor: "action.hover", justifyContent: "space-between", alignItems: "center" }}
         >
-          <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>
             Facility
           </Typography>
-          <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>
             Plan / Actions
           </Typography>
         </Stack>
@@ -239,7 +246,7 @@ export default function SuperAdminTenantsPage() {
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} variant="text" height={64} />)}
           </Box>
         ) : !filtered.length ? (
-          <Stack alignItems="center" sx={{ py: 6, gap: 1 }}>
+          <Stack sx={{ py: 6, gap: 1, alignItems: "center" }}>
             <IconifyIcon icon="material-symbols:search-off-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
             <Typography variant="body2" color="text.disabled">
               {search ? "No facilities match your search." : "No facilities registered yet."}

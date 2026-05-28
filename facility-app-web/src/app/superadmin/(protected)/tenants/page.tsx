@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -8,6 +8,7 @@ import * as yup from "yup";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -20,13 +21,21 @@ import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import TextField from "@mui/material/TextField";
+import Toolbar from "@mui/material/Toolbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { DataGrid, gridClasses, type GridColDef } from "@mui/x-data-grid";
+import { visuallyHidden } from "@mui/utils";
 import dayjs from "dayjs";
 import IconifyIcon from "components/base/IconifyIcon";
-import DataGridPagination from "components/pagination/DataGridPagination";
 import {
   useListTenants,
   useCreateTenant,
@@ -36,19 +45,76 @@ import {
   type CreateTenantPayload,
 } from "services/swr/api-hooks/useSuperAdminApi";
 
-const schema = yup.object({
-  name:         yup.string().required("Facility name is required"),
-  slug:         yup.string().matches(/^[a-z0-9-]+$/, "Lowercase letters, numbers and hyphens only").required("Organisation code is required"),
-  contactEmail: yup.string().email("Invalid email").required("Contact email is required"),
-});
+// ── Sorting helpers ────────────────────────────────────────────────────────────
 
-function ActionCell({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => void }) {
+type Order = "asc" | "desc";
+type SortKey = "name" | "isActive" | "plan" | "createdAt";
+
+function descendingComparator(a: TenantItem, b: TenantItem, key: SortKey) {
+  const av = a[key];
+  const bv = b[key];
+  if (bv < av) return -1;
+  if (bv > av) return 1;
+  return 0;
+}
+
+function getComparator(order: Order, key: SortKey) {
+  return order === "desc"
+    ? (a: TenantItem, b: TenantItem) => descendingComparator(a, b, key)
+    : (a: TenantItem, b: TenantItem) => -descendingComparator(a, b, key);
+}
+
+// ── Column definitions ─────────────────────────────────────────────────────────
+
+interface HeadCell {
+  id: SortKey;
+  label: string;
+  width?: number;
+  align?: "left" | "right" | "center";
+}
+
+const HEAD_CELLS: HeadCell[] = [
+  { id: "name",      label: "Facility",  width: 280 },
+  { id: "isActive",  label: "Status",    width: 110 },
+  { id: "plan",      label: "Plan",      width: 120 },
+  { id: "createdAt", label: "Created",   width: 130 },
+];
+
+// ── Selection toolbar ──────────────────────────────────────────────────────────
+
+function SelectionToolbar({ selected, onClear }: { selected: string[]; onClear: () => void }) {
+  if (!selected.length) return null;
+  return (
+    <Toolbar
+      sx={{
+        px: 2,
+        bgcolor: "primary.softBg",
+        borderRadius: 1,
+        mb: 1,
+        justifyContent: "space-between",
+      }}
+    >
+      <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 600 }}>
+        {selected.length} selected
+      </Typography>
+      <Stack direction="row" sx={{ gap: 1 }}>
+        <Button size="small" color="inherit" onClick={onClear}>
+          Clear
+        </Button>
+      </Stack>
+    </Toolbar>
+  );
+}
+
+// ── Row actions ────────────────────────────────────────────────────────────────
+
+function TenantRowActions({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => void }) {
   const router = useRouter();
-  const { trigger: toggle, isMutating: toggling } = useToggleTenant(tenant.id);
+  const { trigger: toggle,     isMutating: toggling     } = useToggleTenant(tenant.id);
   const { trigger: updatePlan, isMutating: updatingPlan } = useUpdateTenantPlan(tenant.id);
 
   return (
-    <Stack direction="row" sx={{ gap: 0.5, alignItems: "center", height: "100%" }}>
+    <Stack direction="row" sx={{ gap: 0.5, alignItems: "center", justifyContent: "flex-end" }}>
       <Select
         size="small"
         value={tenant.plan}
@@ -62,9 +128,16 @@ function ActionCell({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => 
 
       <Tooltip title={tenant.isActive ? "Deactivate" : "Activate"}>
         <span>
-          <IconButton size="small" disabled={toggling} color={tenant.isActive ? "error" : "success"}
-            onClick={async () => { await toggle(); onMutate(); }}>
-            <IconifyIcon icon={tenant.isActive ? "material-symbols:block-rounded" : "material-symbols:check-circle-outline-rounded"} sx={{ fontSize: 18 }} />
+          <IconButton
+            size="small"
+            disabled={toggling}
+            color={tenant.isActive ? "error" : "success"}
+            onClick={async () => { await toggle(); onMutate(); }}
+          >
+            <IconifyIcon
+              icon={tenant.isActive ? "material-symbols:block-rounded" : "material-symbols:check-circle-outline-rounded"}
+              sx={{ fontSize: 18 }}
+            />
           </IconButton>
         </span>
       </Tooltip>
@@ -76,7 +149,13 @@ function ActionCell({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => 
       </Tooltip>
 
       <Tooltip title="Open portal">
-        <IconButton size="small" component="a" href={`/${tenant.slug}/login`} target="_blank" rel="noopener noreferrer">
+        <IconButton
+          size="small"
+          component="a"
+          href={`/${tenant.slug}/login`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <IconifyIcon icon="material-symbols:open-in-new-rounded" sx={{ fontSize: 18 }} />
         </IconButton>
       </Tooltip>
@@ -84,15 +163,62 @@ function ActionCell({ tenant, onMutate }: { tenant: TenantItem; onMutate: () => 
   );
 }
 
+// ── Schema ─────────────────────────────────────────────────────────────────────
+
+const schema = yup.object({
+  name:         yup.string().required("Facility name is required"),
+  slug:         yup.string().matches(/^[a-z0-9-]+$/, "Lowercase letters, numbers and hyphens only").required("Organisation code is required"),
+  contactEmail: yup.string().email("Invalid email").required("Contact email is required"),
+});
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
 export default function SuperAdminTenantsPage() {
   const { data: tenants, isLoading, mutate } = useListTenants();
   const { trigger: createTenant, isMutating: creating } = useCreateTenant();
-  const [open, setOpen]               = useState(false);
+
+  const [order,    setOrder]    = useState<Order>("desc");
+  const [orderBy,  setOrderBy]  = useState<SortKey>("createdAt");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [page,     setPage]     = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search,   setSearch]   = useState("");
+  const [open,     setOpen]     = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [search, setSearch]           = useState("");
 
   const { register, handleSubmit, reset, formState: { errors } } =
     useForm<CreateTenantPayload>({ resolver: yupResolver(schema) });
+
+  const filtered = useMemo(() =>
+    (tenants ?? []).filter((t) =>
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.slug.toLowerCase().includes(search.toLowerCase())
+    ),
+    [tenants, search],
+  );
+
+  const sorted = useMemo(() =>
+    [...filtered].sort(getComparator(order, orderBy)),
+    [filtered, order, orderBy],
+  );
+
+  const paginated = sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleSort = (key: SortKey) => {
+    const isAsc = orderBy === key && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(key);
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelected(e.target.checked ? filtered.map((t) => t.id) : []);
+  };
+
+  const handleSelect = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
 
   const onSubmit = async (data: CreateTenantPayload) => {
     setCreateError(null);
@@ -106,100 +232,25 @@ export default function SuperAdminTenantsPage() {
     }
   };
 
-  const rows = useMemo(() =>
-    (tenants ?? []).filter((t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase())
-    ),
-    [tenants, search],
-  );
-
-  const columns: GridColDef<TenantItem>[] = useMemo(() => [
-    {
-      field: "name",
-      headerName: "Facility",
-      headerClassName: "name-header",
-      cellClassName: "name-cell",
-      minWidth: 220,
-      flex: 1,
-      renderCell: (params) => (
-        <Stack sx={{ gap: 0.25, justifyContent: "center", height: "100%" }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
-            {params.row.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            /{params.row.slug}
-            {params.row.contactEmail ? ` · ${params.row.contactEmail}` : ""}
-          </Typography>
-        </Stack>
-      ),
-    },
-    {
-      field: "isActive",
-      headerName: "Status",
-      headerClassName: "status-header",
-      cellClassName: "status-cell",
-      width: 110,
-      renderCell: (params) => (
-        <Chip
-          label={params.row.isActive ? "Active" : "Inactive"}
-          size="small"
-          color={params.row.isActive ? "success" : "default"}
-          variant="soft"
-        />
-      ),
-    },
-    {
-      field: "plan",
-      headerName: "Plan",
-      headerClassName: "plan-header",
-      cellClassName: "plan-cell",
-      width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.row.plan === 1 ? "Professional" : "Starter"}
-          size="small"
-          color={params.row.plan === 1 ? "warning" : "default"}
-          variant="soft"
-        />
-      ),
-    },
-    {
-      field: "createdAt",
-      headerName: "Created",
-      headerClassName: "created-header",
-      cellClassName: "created-cell",
-      width: 130,
-      renderCell: (params) => (
-        <Typography variant="caption" color="text.secondary">
-          {dayjs(params.row.createdAt).format("DD MMM YYYY")}
-        </Typography>
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "",
-      headerClassName: "action-header",
-      cellClassName: "action-cell",
-      sortable: false,
-      width: 280,
-      renderCell: (params) => <ActionCell tenant={params.row} onMutate={mutate} />,
-    },
-  ], [mutate]);
+  const numSelected   = selected.length;
+  const rowCount      = filtered.length;
 
   return (
     <Grid container>
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 5 } }}>
           {/* Header */}
-          <Stack direction={{ xs: "column", sm: "row" }} sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            sx={{ mb: 4, gap: 2, justifyContent: "space-between", alignItems: { sm: "center" } }}
+          >
             <Box>
               <Stack direction="row" sx={{ gap: 1, mb: 0.5, alignItems: "center" }}>
                 <IconifyIcon icon="material-symbols:apartment-outline-rounded" sx={{ fontSize: 24, color: "primary.main" }} />
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>Facilities</Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary">
-                Manage all registered facilities and their plans.
+                {rowCount} of {tenants?.length ?? 0} registered {(tenants?.length ?? 0) === 1 ? "facility" : "facilities"}
               </Typography>
             </Box>
             <Button
@@ -216,8 +267,8 @@ export default function SuperAdminTenantsPage() {
             placeholder="Search by name or org code…"
             size="small"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ mb: 3, maxWidth: 360 }}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            sx={{ mb: 2, maxWidth: 360 }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -229,35 +280,144 @@ export default function SuperAdminTenantsPage() {
             }}
           />
 
-          {/* DataGrid */}
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            rowHeight={64}
-            loading={isLoading}
-            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            pageSizeOptions={[10, 25, 50]}
-            disableRowSelectionOnClick
-            slots={{
-              basePagination: (props) => <DataGridPagination showFullPagination {...props} />,
-            }}
-            sx={({ spacing }) => ({
-              border: 0,
-              [`& .${gridClasses.columnHeaders}`]: {
-                [`& .${gridClasses.columnHeader}`]: {
-                  "&:not(.action-header)": { p: `0 ${spacing(1.25)}` },
-                  "&.action-header": { pl: spacing(1.25) },
-                },
-              },
-              [`& .${gridClasses.row}`]: {
-                [`& .${gridClasses.cell}`]: {
-                  "&.aurora-data-grid-cell": {
-                    "&:not(.action-cell)": { p: `0 ${spacing(1.25)}` },
-                    "&.action-cell": { pl: spacing(1.25) },
-                  },
-                },
-              },
-            })}
+          {/* Selection toolbar */}
+          <SelectionToolbar selected={selected} onClear={() => setSelected([])} />
+
+          {/* Table */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {/* Select-all checkbox */}
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={numSelected > 0 && numSelected < rowCount}
+                      checked={rowCount > 0 && numSelected === rowCount}
+                      onChange={handleSelectAll}
+                      size="small"
+                    />
+                  </TableCell>
+
+                  {HEAD_CELLS.map((col) => (
+                    <TableCell
+                      key={col.id}
+                      align={col.align ?? "left"}
+                      width={col.width}
+                      sortDirection={orderBy === col.id ? order : false}
+                    >
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleSort(col.id)}
+                      >
+                        {col.label}
+                        {orderBy === col.id && (
+                          <Box component="span" sx={visuallyHidden}>
+                            {order === "desc" ? "sorted descending" : "sorted ascending"}
+                          </Box>
+                        )}
+                      </TableSortLabel>
+                    </TableCell>
+                  ))}
+
+                  {/* Actions column — no sort */}
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {isLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={6}>
+                          <Box sx={{ height: 40, bgcolor: "action.hover", borderRadius: 1 }} />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : !paginated.length
+                  ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                          <Stack sx={{ alignItems: "center", gap: 1 }}>
+                            <IconifyIcon icon="material-symbols:search-off-rounded" sx={{ fontSize: 40, color: "text.disabled" }} />
+                            <Typography variant="body2" color="text.disabled">
+                              {search ? "No facilities match your search." : "No facilities registered yet."}
+                            </Typography>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : paginated.map((tenant) => {
+                      const isSelected = selected.includes(tenant.id);
+                      return (
+                        <TableRow
+                          key={tenant.id}
+                          hover
+                          selected={isSelected}
+                          sx={{ "&:last-child td": { border: 0 } }}
+                        >
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => handleSelect(tenant.id)}
+                              size="small"
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <Stack sx={{ gap: 0.25 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+                                {tenant.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.disabled">
+                                /{tenant.slug}
+                                {tenant.contactEmail ? ` · ${tenant.contactEmail}` : ""}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+
+                          <TableCell>
+                            <Chip
+                              label={tenant.isActive ? "Active" : "Inactive"}
+                              size="small"
+                              color={tenant.isActive ? "success" : "default"}
+                              variant="soft"
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <Chip
+                              label={tenant.plan === 1 ? "Professional" : "Starter"}
+                              size="small"
+                              color={tenant.plan === 1 ? "warning" : "default"}
+                              variant="soft"
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <Typography variant="caption" color="text.secondary">
+                              {dayjs(tenant.createdAt).format("DD MMM YYYY")}
+                            </Typography>
+                          </TableCell>
+
+                          <TableCell align="right">
+                            <TenantRowActions tenant={tenant} onMutate={mutate} />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            rowsPerPageOptions={[5, 10, 25]}
           />
         </Paper>
       </Grid>
@@ -270,17 +430,27 @@ export default function SuperAdminTenantsPage() {
             {createError && <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>}
             <Grid container rowSpacing={2.5}>
               <Grid size={12}>
-                <TextField fullWidth label="Facility Name" placeholder="e.g. Greenview Estates"
-                  error={!!errors.name} helperText={errors.name?.message} {...register("name")} />
+                <TextField
+                  fullWidth label="Facility Name" placeholder="e.g. Greenview Estates"
+                  error={!!errors.name} helperText={errors.name?.message}
+                  {...register("name")}
+                />
               </Grid>
               <Grid size={12}>
-                <TextField fullWidth label="Organisation Code (slug)" placeholder="e.g. greenview"
-                  error={!!errors.slug} helperText={errors.slug?.message ?? "Lowercase letters, numbers and hyphens. Used in login URLs."}
-                  {...register("slug")} inputProps={{ style: { textTransform: "lowercase" } }} />
+                <TextField
+                  fullWidth label="Organisation Code (slug)" placeholder="e.g. greenview"
+                  error={!!errors.slug}
+                  helperText={errors.slug?.message ?? "Lowercase letters, numbers and hyphens. Used in login URLs."}
+                  {...register("slug")}
+                  inputProps={{ style: { textTransform: "lowercase" } }}
+                />
               </Grid>
               <Grid size={12}>
-                <TextField fullWidth label="Contact Email" type="email"
-                  error={!!errors.contactEmail} helperText={errors.contactEmail?.message} {...register("contactEmail")} />
+                <TextField
+                  fullWidth label="Contact Email" type="email"
+                  error={!!errors.contactEmail} helperText={errors.contactEmail?.message}
+                  {...register("contactEmail")}
+                />
               </Grid>
             </Grid>
           </DialogContent>

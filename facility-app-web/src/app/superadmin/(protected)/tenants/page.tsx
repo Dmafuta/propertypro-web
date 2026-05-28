@@ -174,7 +174,7 @@ const schema = yup.object({
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function SuperAdminTenantsPage() {
-  const { data: tenants, isLoading, error: listError, mutate } = useListTenants();
+  const { data: tenants, isLoading, mutate } = useListTenants();
   const { trigger: createTenant, isMutating: creating } = useCreateTenant();
 
   const [order,    setOrder]    = useState<Order>("desc");
@@ -261,13 +261,6 @@ export default function SuperAdminTenantsPage() {
               New Facility
             </Button>
           </Stack>
-
-          {/* Fetch error */}
-          {listError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              Failed to load facilities — {JSON.stringify(listError)}
-            </Alert>
-          )}
 
           {/* Search */}
           <TextField

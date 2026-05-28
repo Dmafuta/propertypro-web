@@ -160,12 +160,41 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
+      // Initial sign-in — store tokens + expiry
       if (user) {
-        token.accessToken = (user as any).accessToken;
-        token.refreshToken = (user as any).refreshToken;
-        token.user = (user as any).user;
+        token.accessToken      = (user as any).accessToken;
+        token.refreshToken     = (user as any).refreshToken;
+        token.user             = (user as any).user;
+        // Refresh 5 minutes before the 60-minute Blazor JWT expires
+        token.accessTokenExpiry = Date.now() + 55 * 60 * 1000;
+        return token;
       }
-      return token;
+
+      // Token still valid — return as-is
+      if (Date.now() < ((token.accessTokenExpiry as number) ?? 0)) {
+        return token;
+      }
+
+      // Access token expired — attempt silent refresh
+      try {
+        const res = await fetch(`${backendUrl}/api/auth/refresh`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ refreshToken: token.refreshToken }),
+        });
+        if (!res.ok) throw new Error('refresh_failed');
+        const refreshed = await res.json();
+        return {
+          ...token,
+          accessToken:       refreshed.accessToken,
+          refreshToken:      refreshed.refreshToken,
+          accessTokenExpiry: Date.now() + 55 * 60 * 1000,
+          error:             undefined,
+        };
+      } catch {
+        // Refresh failed — keep stale token; client will get 401 and can re-login
+        return { ...token, error: 'RefreshAccessTokenError' };
+      }
     },
 
     async session({ session, token }) {
@@ -189,6 +218,9 @@ export const authOptions: NextAuthOptions = {
       }
       if (token.refreshToken) {
         session.refreshToken = token.refreshToken as string;
+      }
+      if (token.error) {
+        (session as any).error = token.error;
       }
       return session;
     },

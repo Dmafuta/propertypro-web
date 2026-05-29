@@ -1,5 +1,5 @@
-import SuperAdminDashboard from 'components/sections/dashboards/superadmin';
+import CRM from 'components/sections/dashboards/crm';
 
 export default function SuperAdminDashboardPage() {
-  return <SuperAdminDashboard />;
+  return <CRM />;
 }

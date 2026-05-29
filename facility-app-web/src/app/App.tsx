@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { SWRConfig } from 'swr';
 import { useConfigFromQuery } from 'hooks/useConfigFromQuery';
 import useTenantPrimaryColor from 'hooks/useTenantPrimaryColor';
 import SettingsPanelProvider from 'providers/SettingsPanelProvider';
@@ -37,6 +38,7 @@ const App = ({
   // }, [mode]);
 
   return (
+    <SWRConfig value={{ revalidateOnFocus: false, dedupingInterval: 30_000 }}>
     <SettingsPanelProvider>
       {isShowcase && (
         <style>{`
@@ -50,6 +52,7 @@ const App = ({
       )}
       {children}
     </SettingsPanelProvider>
+    </SWRConfig>
   );
 };
 

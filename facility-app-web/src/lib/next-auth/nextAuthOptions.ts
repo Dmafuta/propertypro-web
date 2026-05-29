@@ -37,7 +37,9 @@ export const demoUser = {
   tenantName: '',
 };
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5055';
+// Server-side calls (NextAuth authorize + token refresh) use the internal Docker
+// hostname when available — avoids a public-internet round-trip on the VPS.
+const backendUrl = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5055';
 
 export const authOptions: NextAuthOptions = {
   providers: [

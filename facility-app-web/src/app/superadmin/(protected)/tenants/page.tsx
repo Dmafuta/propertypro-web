@@ -27,6 +27,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
+import TablePaginationActions from "@mui/material/TablePaginationActions";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import TextField from "@mui/material/TextField";
@@ -418,6 +419,7 @@ export default function SuperAdminTenantsPage() {
             onPageChange={(_, p) => setPage(p)}
             onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
             rowsPerPageOptions={[5, 10, 25]}
+            ActionsComponent={TablePaginationActions}
           />
         </Paper>
       </Grid>

@@ -48,7 +48,10 @@ export default function FacilityResetPasswordForm({ slug, mode }: Props) {
     formState: { errors, isSubmitting, isSubmitSuccessful },
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
-    defaultValues: { token: searchParams.get("token") ?? "" },
+    defaultValues: {
+      email: searchParams.get("email") ?? "",
+      token: searchParams.get("token") ?? "",
+    },
   });
 
   const onSubmit = async (data: FormValues) => {

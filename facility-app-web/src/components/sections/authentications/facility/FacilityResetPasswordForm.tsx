@@ -55,6 +55,7 @@ export default function FacilityResetPasswordForm({ slug, mode }: Props) {
     setTenantSlug(slug);
     try {
       await axiosInstance.post("/auth/reset-password", {
+        slug,
         email:       data.email,
         token:       data.token,
         newPassword: data.password,

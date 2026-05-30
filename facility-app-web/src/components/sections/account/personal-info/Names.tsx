@@ -1,9 +1,13 @@
-import { useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Stack, TextField } from '@mui/material';
+import { useSession } from 'next-auth/react';
 import { useSnackbar } from 'notistack';
 import { useAccounts } from 'providers/AccountsProvider';
+import { useUpdateProfile } from 'services/swr/api-hooks/useAccountApi';
 import * as yup from 'yup';
 import IconifyIcon from 'components/base/IconifyIcon';
 import AccountFormDialog from '../common/AccountFormDialog';
@@ -11,47 +15,64 @@ import InfoCard from '../common/InfoCard';
 import InfoCardAttribute from '../common/InfoCardAttribute';
 
 interface NameFormValues {
-  firstName: string;
-  lastName: string;
+  firstName:  string;
+  middleName: string;
+  lastName:   string;
 }
 
 const nameSchema = yup.object().shape({
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().required('Last name is required'),
+  firstName:  yup.string().required('First name is required'),
+  middleName: yup.string().optional(),
+  lastName:   yup.string().required('Last name is required'),
 });
 
 const Names = () => {
-  const { personalInfo } = useAccounts();
-  const [open, setOpen] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
-  const [currentName, setCurrentName] = useState<NameFormValues>({
-    firstName: personalInfo.firstName,
-    lastName: personalInfo.lastName,
-  });
+  const { personalInfo, refetchProfile } = useAccounts();
+  const { update: updateSession }        = useSession();
+  const { trigger: updateProfile }       = useUpdateProfile();
+  const [open, setOpen]                  = useState(false);
+  const { enqueueSnackbar }              = useSnackbar();
+
   const methods = useForm<NameFormValues>({
     defaultValues: {
-      firstName: currentName.firstName,
-      lastName: currentName.lastName,
+      firstName:  personalInfo.firstName,
+      middleName: personalInfo.middleName,
+      lastName:   personalInfo.lastName,
     },
     resolver: yupResolver(nameSchema),
   });
-  const {
-    register,
-    getValues,
-    reset,
-    formState: { errors },
-  } = methods;
+  const { register, reset, formState: { errors } } = methods;
 
-  const onSubmit: SubmitHandler<NameFormValues> = (data) => {
-    console.log(data);
-    const updatedData = getValues();
-    setCurrentName(updatedData);
-    setOpen(false);
-    enqueueSnackbar('Updated successfully!', { variant: 'success', autoHideDuration: 3000 });
+  useEffect(() => {
+    reset({
+      firstName:  personalInfo.firstName,
+      middleName: personalInfo.middleName,
+      lastName:   personalInfo.lastName,
+    });
+  }, [personalInfo.firstName, personalInfo.middleName, personalInfo.lastName, reset]);
+
+  const onSubmit: SubmitHandler<NameFormValues> = async (data) => {
+    try {
+      await updateProfile({
+        firstName:  data.firstName,
+        middleName: data.middleName || null,
+        lastName:   data.lastName,
+      });
+      await refetchProfile();
+      await updateSession({ name: `${data.firstName} ${data.lastName}`.trim() });
+      setOpen(false);
+      enqueueSnackbar('Name updated successfully!', { variant: 'success', autoHideDuration: 3000 });
+    } catch (err: any) {
+      enqueueSnackbar(err?.data?.error ?? 'Failed to update name.', { variant: 'error', autoHideDuration: 4000 });
+    }
   };
 
   const handleDiscard = () => {
-    reset({ firstName: currentName.firstName, lastName: currentName.lastName });
+    reset({
+      firstName:  personalInfo.firstName,
+      middleName: personalInfo.middleName,
+      lastName:   personalInfo.lastName,
+    });
     setOpen(false);
   };
 
@@ -59,8 +80,8 @@ const Names = () => {
     <FormProvider {...methods}>
       <InfoCard setOpen={setOpen}>
         <Stack sx={{ gap: { xs: 2, sm: 1 } }}>
-          <InfoCardAttribute label="First Name" value={currentName.firstName} />
-          <InfoCardAttribute label="Last Name" value={currentName.lastName} />
+          <InfoCardAttribute label="First Name" value={personalInfo.firstName || '—'} />
+          <InfoCardAttribute label="Last Name"  value={personalInfo.lastName  || '—'} />
         </Stack>
         <IconifyIcon
           icon="material-symbols-light:edit-outline"
@@ -69,7 +90,7 @@ const Names = () => {
       </InfoCard>
       <AccountFormDialog
         title="Name"
-        subtitle="Enter your updated first and last name below. Your name will be reflected across all your account settings."
+        subtitle="Update your first, middle (optional), and last name."
         open={open}
         onSubmit={onSubmit}
         handleDialogClose={() => setOpen(false)}
@@ -84,6 +105,12 @@ const Names = () => {
             helperText={errors.firstName?.message}
             fullWidth
             {...register('firstName')}
+          />
+          <TextField
+            placeholder="Middle Name (optional)"
+            label="Middle Name"
+            fullWidth
+            {...register('middleName')}
           />
           <TextField
             placeholder="Last Name"

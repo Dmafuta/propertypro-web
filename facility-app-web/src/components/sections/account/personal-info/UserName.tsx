@@ -1,9 +1,12 @@
-import { useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Stack, TextField } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useAccounts } from 'providers/AccountsProvider';
+import { useUpdateUsername } from 'services/swr/api-hooks/useAccountApi';
 import * as yup from 'yup';
 import IconifyIcon from 'components/base/IconifyIcon';
 import AccountFormDialog from '../common/AccountFormDialog';
@@ -15,37 +18,38 @@ interface UserNameFormValues {
 }
 
 const userNameSchema = yup.object().shape({
-  userName: yup.string().required('User name is required'),
+  userName: yup.string().required('Username is required'),
 });
 
 const UserName = () => {
-  const { personalInfo } = useAccounts();
-  const [open, setOpen] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
-  const [currentUserName, setCurrentUserName] = useState<string>(personalInfo.userName);
+  const { personalInfo, refetchProfile } = useAccounts();
+  const { trigger: updateUsername }      = useUpdateUsername();
+  const [open, setOpen]                  = useState(false);
+  const { enqueueSnackbar }              = useSnackbar();
+
   const methods = useForm<UserNameFormValues>({
-    defaultValues: {
-      userName: currentUserName,
-    },
+    defaultValues: { userName: personalInfo.userName },
     resolver: yupResolver(userNameSchema),
   });
-  const {
-    register,
-    getValues,
-    reset,
-    formState: { errors },
-  } = methods;
+  const { register, reset, formState: { errors } } = methods;
 
-  const onSubmit: SubmitHandler<UserNameFormValues> = (data) => {
-    console.log(data);
-    const updatedData = getValues();
-    setCurrentUserName(updatedData.userName);
-    setOpen(false);
-    enqueueSnackbar('Updated successfully!', { variant: 'success', autoHideDuration: 3000 });
+  useEffect(() => {
+    reset({ userName: personalInfo.userName });
+  }, [personalInfo.userName, reset]);
+
+  const onSubmit: SubmitHandler<UserNameFormValues> = async (data) => {
+    try {
+      await updateUsername({ userName: data.userName });
+      await refetchProfile();
+      setOpen(false);
+      enqueueSnackbar('Username updated successfully!', { variant: 'success', autoHideDuration: 3000 });
+    } catch (err: any) {
+      enqueueSnackbar(err?.data?.error ?? 'Failed to update username.', { variant: 'error', autoHideDuration: 4000 });
+    }
   };
 
   const handleDiscard = () => {
-    reset({ userName: currentUserName });
+    reset({ userName: personalInfo.userName });
     setOpen(false);
   };
 
@@ -53,7 +57,7 @@ const UserName = () => {
     <FormProvider {...methods}>
       <InfoCard setOpen={setOpen}>
         <Stack sx={{ gap: { xs: 2, sm: 1 }, justifyContent: 'center' }}>
-          <InfoCardAttribute label="User Name" value={currentUserName} />
+          <InfoCardAttribute label="User Name" value={personalInfo.userName || '—'} />
         </Stack>
         <IconifyIcon
           icon="material-symbols-light:edit-outline"
@@ -62,18 +66,16 @@ const UserName = () => {
       </InfoCard>
       <AccountFormDialog
         title="User Name"
-        subtitle="Update your username. This change will apply to your account and be visible to others in your interactions."
+        subtitle="Update your username. This will be visible in your interactions across the platform."
         open={open}
         onSubmit={onSubmit}
         handleDialogClose={() => setOpen(false)}
         handleDiscard={handleDiscard}
-        sx={{
-          maxWidth: 463,
-        }}
+        sx={{ maxWidth: 463 }}
       >
         <Stack sx={{ gap: 1, p: 0.125 }}>
           <TextField
-            placeholder="User Name"
+            placeholder="Username"
             label="User Name"
             error={!!errors.userName}
             helperText={errors.userName?.message}

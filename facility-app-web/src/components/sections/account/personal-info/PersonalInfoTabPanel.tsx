@@ -1,4 +1,10 @@
+'use client';
+
+import { useState } from 'react';
 import { Divider, Stack } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import { useAccounts } from 'providers/AccountsProvider';
+import { uploadAvatar } from 'services/swr/api-hooks/useAccountApi';
 import AvatarDropBox from 'components/base/AvatarDropBox';
 import AccountTabPanelSection from '../common/AccountTabPanelSection';
 import Address from './Address';
@@ -9,19 +15,31 @@ import Phone from './Phone';
 import UserName from './UserName';
 
 const PersonalInfoTabPanel = () => {
+  const { personalInfo, refetchProfile } = useAccounts();
+  const { enqueueSnackbar }              = useSnackbar();
+  const [uploading, setUploading]        = useState(false);
+
+  const handleAvatarDrop = async (acceptedFiles: File[]) => {
+    if (!acceptedFiles.length || uploading) return;
+    setUploading(true);
+    try {
+      await uploadAvatar(acceptedFiles[0]);
+      await refetchProfile();
+      enqueueSnackbar('Profile photo updated!', { variant: 'success', autoHideDuration: 3000 });
+    } catch (err: any) {
+      enqueueSnackbar(err?.data?.error ?? 'Failed to upload photo.', { variant: 'error', autoHideDuration: 4000 });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
-      <Stack
-        direction="row"
-        sx={{
-          justifyContent: 'center',
-          mb: 2,
-        }}
-      >
+      <Stack direction="row" sx={{ justifyContent: 'center', mb: 2 }}>
         <AvatarDropBox
-          onDrop={(acceptedFiles) => {
-            console.log({ acceptedFiles });
-          }}
+          defaultFile={personalInfo.avatarUrl ?? undefined}
+          disabled={uploading}
+          onDrop={handleAvatarDrop}
         />
       </Stack>
       <Stack divider={<Divider />} sx={{ gap: 5 }}>
@@ -38,7 +56,7 @@ const PersonalInfoTabPanel = () => {
 
         <AccountTabPanelSection
           title="Birthday"
-          subtitle="Adjust your date of birth to ensure it’s accurate in your account. Visibility of your birthday can also be controlled here."
+          subtitle="Adjust your date of birth to ensure it's accurate in your account."
           icon="material-symbols:cake-outline"
         >
           <Birthday />

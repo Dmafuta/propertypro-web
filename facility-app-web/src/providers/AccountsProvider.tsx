@@ -1,9 +1,11 @@
+'use client';
+
 import { createContext, PropsWithChildren, use } from 'react';
-import { personalInfoData } from 'data/account/personal-info';
 import { billingAddressData, shippingAddressData } from 'data/account/shipping-billing-address';
 import { backupSyncSettings, storageData } from 'data/account/storage';
 import { globalPermissions, userPermissions } from 'data/account/user-permissions';
 import { educationHistory, workHistory } from 'data/account/work-education-history';
+import { useGetProfile } from 'services/swr/api-hooks/useAccountApi';
 import {
   AddressInfo,
   BackupSyncSettings,
@@ -16,6 +18,8 @@ import {
 
 interface AccountsContextInterface {
   personalInfo: PersonalInfo;
+  profileLoading: boolean;
+  refetchProfile: () => void;
   workHistory: WorkHistory[];
   educationHistory: EducationHistory[];
   usersPermissions: {
@@ -36,24 +40,42 @@ interface AccountsContextInterface {
 export const AccountsContext = createContext({} as AccountsContextInterface);
 
 const AccountsProvider = ({ children }: PropsWithChildren) => {
-  const personalInfoValues: PersonalInfo = personalInfoData;
-  const workHistoryValues: WorkHistory[] = workHistory;
-  const educationHistoryValues: EducationHistory[] = educationHistory;
+  const { data: profile, isLoading: profileLoading, mutate: refetchProfile } = useGetProfile();
+
+  const personalInfo: PersonalInfo = {
+    firstName:      profile?.firstName     ?? '',
+    middleName:     profile?.middleName    ?? '',
+    lastName:       profile?.lastName      ?? '',
+    userName:       profile?.userName      ?? '',
+    phoneNumber:    profile?.phoneNumber   ?? '',
+    primaryEmail:   profile?.email         ?? '',
+    secondaryEmail: profile?.secondaryEmail ?? '',
+    avatarUrl:      profile?.avatarUrl     ?? null,
+    // non-API fields kept as empty (not stored in our DB)
+    birthDate: '',
+    country:   '',
+    state:     '',
+    city:      '',
+    street:    '',
+    zip:       '',
+  };
 
   return (
     <AccountsContext
       value={{
-        personalInfo: personalInfoValues,
-        workHistory: workHistoryValues,
-        educationHistory: educationHistoryValues,
+        personalInfo,
+        profileLoading,
+        refetchProfile,
+        workHistory,
+        educationHistory,
         usersPermissions: {
-          globalPermissions: globalPermissions,
+          globalPermissions,
           collabPermission: 'anyone',
-          userPermissions: userPermissions,
+          userPermissions,
         },
         shippingBillingAddress: {
           shippingAddress: shippingAddressData,
-          billingAddress: billingAddressData,
+          billingAddress:  billingAddressData,
         },
         storage: {
           backupSyncSettings,

@@ -13,6 +13,7 @@ export interface AccountTab {
 
 export interface PersonalInfo {
   firstName: string;
+  middleName: string;
   lastName: string;
   userName: string;
   birthDate: string;
@@ -24,6 +25,7 @@ export interface PersonalInfo {
   phoneNumber: string;
   primaryEmail: string;
   secondaryEmail: string;
+  avatarUrl: string | null;
 }
 
 export interface WorkHistory {

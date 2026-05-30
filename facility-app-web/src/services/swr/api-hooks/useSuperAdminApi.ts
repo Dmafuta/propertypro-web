@@ -49,3 +49,16 @@ export const useUpdateTenantPlan = (id: string) =>
     (url: string, { arg }: { arg: { plan: number } }) =>
       axiosInstance.patch(url, arg)
   );
+
+export interface TenantHealth {
+  totalStaff: number;
+  totalResidents: number;
+  visitorVolume30d: number;
+  maintenanceBacklog: number;
+  totalUnits: number;
+  occupiedUnits: number;
+  openIncidents: number;
+}
+
+export const useTenantHealth = (id: string) =>
+  useSWR<TenantHealth>(`/superadmin/tenants/${id}/health`, axiosFetcher);

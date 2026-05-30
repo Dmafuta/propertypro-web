@@ -17,6 +17,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import dayjs from "dayjs";
 import IconifyIcon from "components/base/IconifyIcon";
+import TenantHealthIndicators from "components/sections/superadmin/TenantHealthIndicators";
 import {
   useListTenants,
   useToggleTenant,
@@ -210,12 +211,8 @@ export default function TenantDetailPage({
             </CardContent>
           </Card>
 
-          {/* Scaffold sections */}
-          <ScaffoldSection
-            icon="material-symbols:monitor-heart-outline-rounded"
-            title="Health Indicators"
-            description="Active users, last login date, visitor volume (last 30 days), maintenance backlog, onboarding completion score."
-          />
+          {/* Health Indicators */}
+          <TenantHealthIndicators tenantId={id} />
           <ScaffoldSection
             icon="material-symbols:group-outline-rounded"
             title="Users"

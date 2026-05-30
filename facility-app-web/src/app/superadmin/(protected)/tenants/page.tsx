@@ -20,6 +20,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
+import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -251,7 +252,9 @@ export default function SuperAdminTenantsPage() {
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>Facilities</Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary">
-                {rowCount} of {tenants?.length ?? 0} registered {(tenants?.length ?? 0) === 1 ? "facility" : "facilities"}
+                {isLoading || tenants === undefined
+                  ? <Skeleton width={160} />
+                  : `${rowCount} of ${tenants.length} registered ${tenants.length === 1 ? "facility" : "facilities"}`}
               </Typography>
             </Box>
             <Button
@@ -327,12 +330,15 @@ export default function SuperAdminTenantsPage() {
               </TableHead>
 
               <TableBody>
-                {isLoading
+                {isLoading || tenants === undefined
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={6}>
-                          <Box sx={{ height: 40, bgcolor: "action.hover", borderRadius: 1 }} />
-                        </TableCell>
+                        <TableCell padding="checkbox"><Skeleton variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5 }} /></TableCell>
+                        <TableCell><Skeleton width="60%" /></TableCell>
+                        <TableCell><Skeleton width={60} /></TableCell>
+                        <TableCell><Skeleton width={80} /></TableCell>
+                        <TableCell><Skeleton width={80} /></TableCell>
+                        <TableCell align="right"><Skeleton width={120} sx={{ ml: "auto" }} /></TableCell>
                       </TableRow>
                     ))
                   : !paginated.length

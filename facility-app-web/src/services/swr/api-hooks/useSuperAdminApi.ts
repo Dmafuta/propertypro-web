@@ -62,3 +62,16 @@ export interface TenantHealth {
 
 export const useTenantHealth = (id: string) =>
   useSWR<TenantHealth>(`/superadmin/tenants/${id}/health`, axiosFetcher);
+
+export interface SeedAdminPayload {
+  firstName: string;
+  lastName:  string;
+  email:     string;
+}
+
+export const useSeedAdmin = (id: string) =>
+  useSWRMutation(
+    `/superadmin/tenants/${id}/seed-admin`,
+    (url: string, { arg }: { arg: SeedAdminPayload }) =>
+      axiosInstance.post(url, arg)
+  );

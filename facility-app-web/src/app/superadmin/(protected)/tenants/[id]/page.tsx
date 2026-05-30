@@ -1,7 +1,8 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -14,6 +15,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import dayjs from "dayjs";
 import IconifyIcon from "components/base/IconifyIcon";
@@ -22,6 +24,7 @@ import {
   useListTenants,
   useToggleTenant,
   useUpdateTenantPlan,
+  useSeedAdmin,
 } from "services/swr/api-hooks/useSuperAdminApi";
 
 // Placeholder section shown for features not yet implemented
@@ -82,8 +85,13 @@ export default function TenantDetailPage({
   const { data: tenants, isLoading, mutate } = useListTenants();
   const tenant = tenants?.find((t) => t.id === id);
 
-  const { trigger: toggle, isMutating: toggling } = useToggleTenant(id);
+  const { trigger: toggle, isMutating: toggling }       = useToggleTenant(id);
   const { trigger: updatePlan, isMutating: updatingPlan } = useUpdateTenantPlan(id);
+  const { trigger: seedAdmin,  isMutating: seeding }    = useSeedAdmin(id);
+
+  const [inviteForm, setInviteForm]   = useState({ firstName: '', lastName: '', email: '' });
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSent, setInviteSent]   = useState(false);
 
   const handleToggle = async () => {
     await toggle();
@@ -93,6 +101,21 @@ export default function TenantDetailPage({
   const handlePlanChange = async (plan: number) => {
     await updatePlan({ plan });
     await mutate();
+  };
+
+  const handleInviteAdmin = async () => {
+    setInviteError('');
+    if (!inviteForm.firstName || !inviteForm.lastName || !inviteForm.email) {
+      setInviteError('All fields are required.');
+      return;
+    }
+    try {
+      await seedAdmin(inviteForm);
+      setInviteSent(true);
+      setInviteForm({ firstName: '', lastName: '', email: '' });
+    } catch (err: any) {
+      setInviteError(err?.data?.error ?? 'Failed to send invite. Please try again.');
+    }
   };
 
   return (
@@ -213,11 +236,77 @@ export default function TenantDetailPage({
 
           {/* Health Indicators */}
           <TenantHealthIndicators tenantId={id} />
-          <ScaffoldSection
-            icon="material-symbols:group-outline-rounded"
-            title="Users"
-            description="All staff and resident accounts for this facility — roles, last active date, ability to suspend or reset passwords."
-          />
+
+          {/* Invite Admin */}
+          <Card variant="outlined">
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction="row" sx={{ gap: 2, alignItems: 'flex-start', mb: 2.5 }}>
+                <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <IconifyIcon icon="material-symbols:admin-panel-settings-outline-rounded" sx={{ fontSize: 22, color: 'primary.main' }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    Invite Administrator
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Create the first Admin account for this facility. They will receive a welcome email with a link to set their password.
+                  </Typography>
+                </Box>
+              </Stack>
+
+              {inviteSent ? (
+                <Alert severity="success" onClose={() => setInviteSent(false)}>
+                  Invite sent! The admin will receive an email with instructions to set their password.
+                </Alert>
+              ) : (
+                <Stack sx={{ gap: 2 }}>
+                  {inviteError && <Alert severity="error">{inviteError}</Alert>}
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        label="First Name"
+                        size="small"
+                        fullWidth
+                        value={inviteForm.firstName}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        label="Last Name"
+                        size="small"
+                        fullWidth
+                        value={inviteForm.lastName}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        label="Email Address"
+                        size="small"
+                        fullWidth
+                        type="email"
+                        value={inviteForm.email}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
+                      />
+                    </Grid>
+                  </Grid>
+                  <Box>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={seeding}
+                      loading={seeding}
+                      startIcon={<IconifyIcon icon="material-symbols:send-outline-rounded" sx={{ fontSize: 16 }} />}
+                      onClick={handleInviteAdmin}
+                    >
+                      Send Invite
+                    </Button>
+                  </Box>
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
           <ScaffoldSection
             icon="material-symbols:edit-outline-rounded"
             title="Settings Override"

@@ -52,6 +52,9 @@ const ProfileMenu = ({ type = 'default' }: ProfileMenuProps) => {
   const { data } = useSession();
   // Use demoUser as fallback if no session user
   const user = useMemo(() => data?.user || demoUser, [data?.user]);
+  const accountPath = (data?.user as any)?.roles?.includes('SuperAdmin')
+    ? '/superadmin/account'
+    : paths.account;
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -173,7 +176,7 @@ const ProfileMenu = ({ type = 'default' }: ProfileMenuProps) => {
           <ProfileMenuItem
             icon="material-symbols:accessible-forward-rounded"
             onClick={handleClose}
-            href={`${paths.account}?tab=accessibility`}
+            href={`${accountPath}?tab=accessibility`}
           >
             Accessibility
           </ProfileMenuItem>
@@ -181,7 +184,7 @@ const ProfileMenu = ({ type = 'default' }: ProfileMenuProps) => {
           <ProfileMenuItem
             icon="material-symbols:settings-outline-rounded"
             onClick={handleClose}
-            href={`${paths.account}?tab=accessibility`}
+            href={`${accountPath}?tab=accessibility`}
           >
             Preferences
           </ProfileMenuItem>
@@ -203,7 +206,7 @@ const ProfileMenu = ({ type = 'default' }: ProfileMenuProps) => {
           <ProfileMenuItem
             icon="material-symbols:manage-accounts-outline-rounded"
             onClick={handleClose}
-            href={paths.account}
+            href={accountPath}
           >
             Account Settings
           </ProfileMenuItem>

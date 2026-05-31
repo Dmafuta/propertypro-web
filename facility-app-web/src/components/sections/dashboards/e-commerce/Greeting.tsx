@@ -17,8 +17,16 @@ import {
 } from '@mui/material';
 import { Order, Stat } from 'data/e-commerce/greetings';
 import dayjs from 'dayjs';
+import { useSession } from 'next-auth/react';
 import IconifyIcon from 'components/base/IconifyIcon';
 import SimpleBar from 'components/base/SimpleBar';
+
+function getTimeGreeting(): string {
+  const hour = dayjs().hour();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 interface GreetingProps {
   stats: Stat[];
@@ -26,6 +34,10 @@ interface GreetingProps {
 }
 
 const Greeting = ({ stats, orders }: GreetingProps) => {
+  const { data } = useSession();
+  const firstName = data?.user?.name?.split(' ')[0] ?? 'there';
+  const greeting = getTimeGreeting();
+
   return (
     <Paper
       background={1}
@@ -48,8 +60,8 @@ const Greeting = ({ stats, orders }: GreetingProps) => {
           </Typography>
 
           <Typography variant="h6" sx={{ display: 'flex', columnGap: 1, flexWrap: 'wrap' }}>
-            Good morning,
-            <span>Captain!</span>
+            {greeting},
+            <span>{firstName}!</span>
           </Typography>
         </Stack>
 

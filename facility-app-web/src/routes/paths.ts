@@ -219,6 +219,8 @@ export const facilityPaths = {
 
   // Staff pages
   dashboard:          (slug: string) => `/${slug}/dashboard`,
+  dashboardAnalytics: (slug: string) => `/${slug}/dashboard/analytics`,
+  dashboardCrm:       (slug: string) => `/${slug}/dashboard/crm`,
   visitors:           (slug: string) => `/${slug}/visitors`,
   visitorsPreRegister:(slug: string) => `/${slug}/visitors/pre-register`,
   checkIn:            (slug: string) => `/${slug}/access/check-in`,

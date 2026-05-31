@@ -30,8 +30,36 @@ export interface UpdateSmsPayload {
   senderId?: string | null;
 }
 
+export interface UpdateSettingsPayload {
+  name: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  address?: string | null;
+  website?: string | null;
+  customDomain?: string | null;
+}
+
+export interface UpdateBrandingPayload {
+  logoUrl?: string | null;
+  primaryColour?: string | null;
+}
+
 export const useGetSettings = () =>
   useSWR<TenantSettings>('/settings', axiosFetcher);
+
+export const useUpdateSettings = () =>
+  useSWRMutation(
+    '/settings',
+    (_url: string, { arg }: { arg: UpdateSettingsPayload }) =>
+      axiosInstance.put('/settings', arg),
+  );
+
+export const useUpdateBranding = () =>
+  useSWRMutation(
+    '/settings/branding',
+    (_url: string, { arg }: { arg: UpdateBrandingPayload }) =>
+      axiosInstance.patch('/settings/branding', arg),
+  );
 
 export const useUpdateSms = () =>
   useSWRMutation(

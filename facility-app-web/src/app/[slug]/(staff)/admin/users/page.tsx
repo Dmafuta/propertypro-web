@@ -34,16 +34,22 @@ import {
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
-const STAFF_ROLES = ['Admin', 'Manager', 'Receptionist', 'Security'] as const;
+const STAFF_ROLES = ['Admin', 'Manager', 'HrManager', 'Receptionist', 'Security'] as const;
 
-type RoleColor = 'error' | 'warning' | 'info' | 'success' | 'neutral';
+type RoleColor = 'error' | 'warning' | 'secondary' | 'info' | 'success' | 'neutral';
 
 function getRoleColor(role: string): RoleColor {
-  if (role === 'Admin')       return 'error';
-  if (role === 'Manager')     return 'warning';
+  if (role === 'Admin')        return 'error';
+  if (role === 'Manager')      return 'warning';
+  if (role === 'HrManager')    return 'secondary';
   if (role === 'Receptionist') return 'info';
-  if (role === 'Security')    return 'success';
+  if (role === 'Security')     return 'success';
   return 'neutral';
+}
+
+function getRoleLabel(role: string): string {
+  if (role === 'HrManager') return 'HR Manager';
+  return role;
 }
 
 function getInitials(name: string) {
@@ -93,7 +99,7 @@ const InviteDialog = ({ open, onClose, onSuccess }: InviteDialogProps) => {
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Invite Staff Member</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Create User</DialogTitle>
       <DialogContent>
         <Stack sx={{ gap: 2.5, pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -133,7 +139,7 @@ const InviteDialog = ({ open, onClose, onSuccess }: InviteDialogProps) => {
           disabled={!fullName.trim() || !email.trim()}
           onClick={handleInvite}
         >
-          Send Invite
+          Create User
         </Button>
       </DialogActions>
     </Dialog>
@@ -289,7 +295,7 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
                 Role
               </Typography>
               {role ? (
-                <Chip label={role} color={getRoleColor(role)} variant="soft" size="small" />
+                <Chip label={getRoleLabel(role)} color={getRoleColor(role)} variant="soft" size="small" />
               ) : (
                 <Chip label="No role" variant="soft" size="small" />
               )}
@@ -313,7 +319,7 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
                   >
                     <MenuItem value=""><em>No role</em></MenuItem>
                     {STAFF_ROLES.map((r) => (
-                      <MenuItem key={r} value={r}>{r}</MenuItem>
+                      <MenuItem key={r} value={r}>{getRoleLabel(r)}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -392,7 +398,7 @@ export default function StaffUsersPage() {
       renderCell: (params) => {
         const role = primaryRole(params.row.roles);
         return role
-          ? <Chip label={role} color={getRoleColor(role)} variant="soft" size="small" />
+          ? <Chip label={getRoleLabel(role)} color={getRoleColor(role)} variant="soft" size="small" />
           : <Chip label="No role" variant="soft" size="small" />;
       },
     },
@@ -463,7 +469,7 @@ export default function StaffUsersPage() {
           onClick={() => setInviteOpen(true)}
           sx={{ flexShrink: 0 }}
         >
-          Invite User
+          Create User
         </Button>
       </Stack>
 

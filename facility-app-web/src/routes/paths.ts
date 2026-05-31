@@ -230,6 +230,7 @@ export const facilityPaths = {
   units:              (slug: string) => `/${slug}/units`,
   unitRequests:       (slug: string) => `/${slug}/units/requests`,
   users:              (slug: string) => `/${slug}/admin/users`,
+  hrStaff:            (slug: string) => `/${slug}/hr/staff`,
   announcements:      (slug: string) => `/${slug}/admin/announcements`,
   documents:          (slug: string) => `/${slug}/admin/documents`,
   auditLog:           (slug: string) => `/${slug}/admin/audit-log`,

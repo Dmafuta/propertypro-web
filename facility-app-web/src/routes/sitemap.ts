@@ -171,6 +171,21 @@ const sitemap: MenuItem[] = [
     ],
   },
   {
+    id: 'hr',
+    subheader: 'Human Resources',
+    icon: 'material-symbols:badge-outline-rounded',
+    items: [
+      {
+        name: 'Staff Directory',
+        path: facilityPaths.hrStaff,
+        pathName: 'hr-staff',
+        selectionPrefix: '/hr/staff',
+        icon: 'material-symbols:badge-outline-rounded',
+        active: true,
+      },
+    ],
+  },
+  {
     id: 'administration',
     subheader: 'Administration',
     icon: 'material-symbols:admin-panel-settings-outline-rounded',

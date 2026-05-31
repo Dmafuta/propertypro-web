@@ -223,14 +223,15 @@ const ProfileMenu = ({ type = 'default' }: ProfileMenuProps) => {
           {data?.user ? (
             <ProfileMenuItem
               onClick={async () => {
-                const res = await signOut({
-                  redirect: false,
-                  callbackUrl: paths.defaultLoggedOut,
-                });
-
-                if (res.url) {
-                  router.push(res.url);
-                }
+                const tenantSlug = (data.user as any)?.tenantSlug;
+                const isSuperAdmin = (data.user as any)?.roles?.includes('SuperAdmin');
+                const redirectUrl = isSuperAdmin
+                  ? '/superadmin/login'
+                  : tenantSlug
+                    ? `/${tenantSlug}/login`
+                    : '/superadmin/login';
+                const res = await signOut({ redirect: false, callbackUrl: redirectUrl });
+                if (res.url) router.push(res.url);
               }}
               icon="material-symbols:logout-rounded"
             >

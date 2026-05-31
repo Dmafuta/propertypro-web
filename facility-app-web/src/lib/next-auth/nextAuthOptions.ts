@@ -229,7 +229,8 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
-    signIn: paths.defaultJwtLogin,
-    signOut: paths.defaultLoggedOut,
+    // Middleware handles tenant-specific redirects (/{slug}/login).
+    // This is only a fallback for any NextAuth-internal redirects.
+    signIn: '/superadmin/login',
   },
 };

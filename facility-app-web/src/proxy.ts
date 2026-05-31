@@ -59,7 +59,8 @@ export async function proxy(req: NextRequest) {
       rest === '/resident/forgot-password' ||
       rest === '/resident/reset-password' ||
       rest === '/forgot-password' ||
-      rest === '/reset-password';
+      rest === '/reset-password' ||
+      rest.startsWith('/visitor/badge/');
 
     if (!isPublic) {
       const token = await getToken({ req, secret });

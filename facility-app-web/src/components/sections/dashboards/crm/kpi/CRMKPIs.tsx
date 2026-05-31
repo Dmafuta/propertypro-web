@@ -1,9 +1,8 @@
 'use client';
 
-import { Avatar, ButtonBase, Paper, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { KPIData } from 'types/crm';
-import IconifyIcon from 'components/base/IconifyIcon';
+import { useGetDashboard } from 'services/swr/api-hooks/useDashboardApi';
 import KPI from './KPI';
 
 interface CRMKPIsProps {
@@ -11,42 +10,38 @@ interface CRMKPIsProps {
 }
 
 const CRMKPIs = ({ data }: CRMKPIsProps) => {
+  const { data: stats } = useGetDashboard();
+
+  const totalUnits    = stats?.totalUnits    ?? 0;
+  const occupiedUnits = stats?.occupiedUnits ?? 0;
+  const occupancyRate = totalUnits > 0 ? `${Math.round((occupiedUnits / totalUnits) * 100)}%` : '—';
+
+  const enriched: KPIData[] = data.map((kpi) => {
+    if (kpi.title === 'Total Units')    return { ...kpi, value: totalUnits };
+    if (kpi.title === 'Occupied Units') return { ...kpi, value: occupiedUnits };
+    return kpi;
+  });
+
+  const occupancyKpi: KPIData = {
+    title: 'Occupancy Rate',
+    value: occupancyRate,
+    subtitle: 'Occupied / total units',
+    icon: {
+      name: 'material-symbols-light:percent-rounded',
+      color: occupiedUnits / (totalUnits || 1) >= 0.8 ? 'success.main' : 'warning.main',
+    },
+  };
+
   return (
     <>
-      {data.map((kpi) => (
+      {enriched.map((kpi) => (
         <Grid key={kpi.title} size={{ xs: 6, sm: 4, lg: 6, xl: 4 }}>
           <KPI {...kpi} />
         </Grid>
       ))}
 
       <Grid size={{ xs: 6, sm: 4, lg: 6, xl: 4 }}>
-        <Paper
-          background={1}
-          sx={{
-            height: 1,
-            '&:hover': {
-              bgcolor: 'background.elevation2',
-            },
-          }}
-        >
-          <ButtonBase
-            sx={{
-              p: { xs: 3, md: 5 },
-              height: 1,
-              width: 1,
-              display: 'grid',
-              placeContent: 'center',
-              justifyItems: 'center',
-            }}
-          >
-            <Avatar sx={{ mb: 3, bgcolor: 'primary.light' }}>
-              <IconifyIcon icon="material-symbols:add-2-rounded" sx={{ fontSize: 24 }} />
-            </Avatar>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              Add New KPI
-            </Typography>
-          </ButtonBase>
-        </Paper>
+        <KPI {...occupancyKpi} />
       </Grid>
     </>
   );

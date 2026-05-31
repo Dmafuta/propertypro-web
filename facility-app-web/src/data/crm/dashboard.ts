@@ -57,20 +57,20 @@ export const kpisData: KPIData[] = [
     },
   },
   {
-    title: 'Inventory',
-    value: 13200,
-    subtitle: 'Units in stock',
+    title: 'Total Units',
+    value: 0,
+    subtitle: 'All units in estate',
     icon: {
-      name: 'material-symbols-light:warehouse-outline-rounded',
+      name: 'material-symbols-light:apartment-outline-rounded',
       color: 'secondary.main',
     },
   },
   {
-    title: 'Delivered',
-    value: 1920,
-    subtitle: 'Unit products',
+    title: 'Occupied Units',
+    value: 0,
+    subtitle: 'Units with residents',
     icon: {
-      name: 'material-symbols-light:local-shipping-outline-rounded',
+      name: 'material-symbols-light:home-outline-rounded',
       color: 'info.main',
     },
   },

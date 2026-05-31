@@ -228,6 +228,7 @@ export const facilityPaths = {
   passes:             (slug: string) => `/${slug}/access/passes`,
   blacklist:          (slug: string) => `/${slug}/access/blacklist`,
   units:              (slug: string) => `/${slug}/units`,
+  unitTypes:          (slug: string) => `/${slug}/admin/unit-types`,
   unitRequests:       (slug: string) => `/${slug}/units/requests`,
   users:              (slug: string) => `/${slug}/admin/users`,
   hrStaff:            (slug: string) => `/${slug}/hr/staff`,

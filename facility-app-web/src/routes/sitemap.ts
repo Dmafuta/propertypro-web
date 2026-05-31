@@ -113,6 +113,13 @@ const sitemap: MenuItem[] = [
         active: true,
       },
       {
+        name: 'Unit Types',
+        path: facilityPaths.unitTypes,
+        pathName: 'unit-types',
+        icon: 'material-symbols:category-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Unit Requests',
         path: facilityPaths.unitRequests,
         pathName: 'unit-requests',

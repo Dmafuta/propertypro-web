@@ -32,6 +32,7 @@ export async function proxy(req: NextRequest) {
   if (
     pathname.startsWith('/superadmin') &&
     !pathname.startsWith('/superadmin/login') &&
+    !pathname.startsWith('/superadmin/2fa') &&
     pathname !== '/superadmin'
   ) {
     const token = await getToken({ req, secret });

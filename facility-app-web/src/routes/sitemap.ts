@@ -190,6 +190,13 @@ const sitemap: MenuItem[] = [
         icon: 'material-symbols:warning-outline-rounded',
         active: true,
       },
+      {
+        name: 'Payments',
+        path: facilityPaths.payments,
+        pathName: 'payments',
+        icon: 'material-symbols:payments-outline-rounded',
+        active: true,
+      },
     ],
   },
   {

@@ -17,18 +17,46 @@ export interface TenantSettings {
   customDomain: string | null;
   primaryColour: string | null;
   logoUrl: string | null;
+  // SMS
   smsEnabled: boolean;
+  smsProvider: number;
   smsApiKey: string | null;
   smsUsername: string | null;
   smsSenderId: string | null;
+  smsApiUrl: string | null;
+  // M-Pesa
+  mpesaEnabled: boolean;
+  mpesaSandbox: boolean;
+  mpesaShortCode: string | null;
+  mpesaConsumerKey: string | null;
+  mpesaConsumerSecret: string | null;
+  mpesaPasskey: string | null;
 }
 
 export interface UpdateSmsPayload {
   enabled: boolean;
+  provider: number;
   apiKey?: string | null;
   username?: string | null;
   senderId?: string | null;
+  apiUrl?: string | null;
 }
+
+export interface UpdateMpesaPayload {
+  enabled: boolean;
+  sandbox: boolean;
+  shortCode?: string | null;
+  consumerKey?: string | null;
+  consumerSecret?: string | null;
+  passkey?: string | null;
+}
+
+export const SMS_PROVIDER_OPTIONS = [
+  { value: 0, label: "Africa's Talking" },
+  { value: 1, label: 'Twilio' },
+  { value: 2, label: 'Vonage' },
+  { value: 3, label: 'Custom HTTP' },
+];
 
 export interface UpdateSettingsPayload {
   name: string;
@@ -66,4 +94,11 @@ export const useUpdateSms = () =>
     '/settings/sms',
     (_url: string, { arg }: { arg: UpdateSmsPayload }) =>
       axiosInstance.patch('/settings/sms', arg),
+  );
+
+export const useUpdateMpesa = () =>
+  useSWRMutation(
+    '/settings/mpesa',
+    (_url: string, { arg }: { arg: UpdateMpesaPayload }) =>
+      axiosInstance.patch('/settings/mpesa', arg),
   );

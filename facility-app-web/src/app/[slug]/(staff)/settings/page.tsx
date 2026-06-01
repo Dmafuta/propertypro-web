@@ -18,9 +18,15 @@ import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconifyIcon from 'components/base/IconifyIcon';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import {
+  SMS_PROVIDER_OPTIONS,
   useGetSettings,
   useUpdateBranding,
+  useUpdateMpesa,
   useUpdateSettings,
   useUpdateSms,
 } from 'services/swr/api-hooks/useSettingsApi';
@@ -348,6 +354,14 @@ const BrandingTab = () => {
   );
 };
 
+// ── Provider credential labels ─────────────────────────────────────────────────
+const PROVIDER_LABELS: Record<number, { key: string; user: string; sender: string; url?: boolean }> = {
+  0: { key: 'API Key',    user: 'Username',    sender: 'Sender ID' },
+  1: { key: 'Auth Token', user: 'Account SID', sender: 'From Number (+E.164)' },
+  2: { key: 'API Key',    user: 'API Secret',  sender: 'From Name/Number' },
+  3: { key: 'Bearer Token (optional)', user: '', sender: 'From (optional)', url: true },
+};
+
 // ── SMS tab ───────────────────────────────────────────────────────────────────
 const SmsTab = () => {
   const { data: settings, isLoading, mutate } = useGetSettings();
@@ -356,20 +370,26 @@ const SmsTab = () => {
   const isProfessional = settings?.plan === 1;
 
   const [smsEnabled, setSmsEnabled] = useState(true);
+  const [provider,   setProvider]   = useState(0);
   const [apiKey,     setApiKey]     = useState('');
   const [username,   setUsername]   = useState('');
   const [senderId,   setSenderId]   = useState('');
+  const [apiUrl,     setApiUrl]     = useState('');
   const [success,    setSuccess]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
 
   useEffect(() => {
     if (settings) {
       setSmsEnabled(settings.smsEnabled);
+      setProvider(settings.smsProvider ?? 0);
       setApiKey(settings.smsApiKey ?? '');
       setUsername(settings.smsUsername ?? '');
       setSenderId(settings.smsSenderId ?? '');
+      setApiUrl(settings.smsApiUrl ?? '');
     }
   }, [settings]);
+
+  const labels = PROVIDER_LABELS[provider] ?? PROVIDER_LABELS[0];
 
   const handleSave = async () => {
     setError(null);
@@ -377,9 +397,11 @@ const SmsTab = () => {
     try {
       await save({
         enabled:  smsEnabled,
+        provider,
         apiKey:   apiKey   || null,
         username: username || null,
         senderId: senderId || null,
+        apiUrl:   apiUrl   || null,
       });
       await mutate();
       setSuccess(true);
@@ -431,7 +453,7 @@ const SmsTab = () => {
           <Box>
             <Stack direction="row" sx={{ gap: 1, alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                Custom Africa&apos;s Talking Credentials
+                SMS Provider
               </Typography>
               {!isProfessional && (
                 <Chip label="Professional" size="small" color="warning" variant="soft" />
@@ -439,44 +461,69 @@ const SmsTab = () => {
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
               {isProfessional
-                ? "Provide your own Africa's Talking account to send SMS under your branding and billing. Leave blank to use the platform's shared account."
-                : "Upgrade to Professional to use your own Africa's Talking account."}
+                ? 'Choose your SMS gateway. Leave credentials blank to use the platform\'s shared Africa\'s Talking account.'
+                : 'Upgrade to Professional to configure your own SMS provider.'}
             </Typography>
 
             <Grid container spacing={2}>
+              <Grid size={12}>
+                <FormControl fullWidth size="small" disabled={!isProfessional || !smsEnabled}>
+                  <InputLabel>Provider</InputLabel>
+                  <Select
+                    value={provider}
+                    label="Provider"
+                    onChange={(e) => {
+                      setProvider(Number(e.target.value));
+                      setApiKey(''); setUsername(''); setSenderId(''); setApiUrl('');
+                    }}
+                  >
+                    {SMS_PROVIDER_OPTIONS.map((o) => (
+                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              {labels.url && (
+                <Grid size={12}>
+                  <TextField
+                    fullWidth size="small"
+                    label="Webhook URL"
+                    value={apiUrl}
+                    onChange={(e) => setApiUrl(e.target.value)}
+                    disabled={!isProfessional || !smsEnabled}
+                    placeholder="https://your-sms-gateway.com/send"
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  fullWidth
-                  size="small"
-                  label="API Key"
+                  fullWidth size="small"
+                  label={labels.key}
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   disabled={!isProfessional || !smsEnabled}
-                  placeholder={isProfessional ? "Africa's Talking API key" : 'Professional plan required'}
                 />
               </Grid>
+              {labels.user && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth size="small"
+                    label={labels.user}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={!isProfessional || !smsEnabled}
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  fullWidth
-                  size="small"
-                  label="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={!isProfessional || !smsEnabled}
-                  placeholder={isProfessional ? "Africa's Talking username" : 'Professional plan required'}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Sender ID (optional)"
+                  fullWidth size="small"
+                  label={labels.sender}
                   value={senderId}
                   onChange={(e) => setSenderId(e.target.value)}
                   disabled={!isProfessional || !smsEnabled}
-                  placeholder="Alphanumeric sender name"
-                  helperText="Leave blank to use a shortcode"
+                  helperText={provider === 0 ? 'Leave blank to use a shortcode' : undefined}
                 />
               </Grid>
             </Grid>
@@ -504,11 +551,199 @@ const SmsTab = () => {
   );
 };
 
+// ── M-Pesa tab ────────────────────────────────────────────────────────────────
+const MpesaTab = () => {
+  const { data: settings, isLoading, mutate } = useGetSettings();
+  const { trigger: save, isMutating: saving } = useUpdateMpesa();
+
+  const isProfessional = settings?.plan === 1;
+
+  const [enabled,        setEnabled]        = useState(false);
+  const [sandbox,        setSandbox]        = useState(true);
+  const [shortCode,      setShortCode]      = useState('');
+  const [consumerKey,    setConsumerKey]    = useState('');
+  const [consumerSecret, setConsumerSecret] = useState('');
+  const [passkey,        setPasskey]        = useState('');
+  const [success,        setSuccess]        = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setEnabled(settings.mpesaEnabled);
+      setSandbox(settings.mpesaSandbox);
+      setShortCode(settings.mpesaShortCode ?? '');
+      setConsumerKey(settings.mpesaConsumerKey ?? '');
+      setConsumerSecret(settings.mpesaConsumerSecret ?? '');
+      setPasskey(settings.mpesaPasskey ?? '');
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    setError(null);
+    setSuccess(false);
+    try {
+      await save({
+        enabled, sandbox,
+        shortCode:      shortCode      || null,
+        consumerKey:    consumerKey    || null,
+        consumerSecret: consumerSecret || null,
+        passkey:        passkey        || null,
+      });
+      await mutate();
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err?.data?.error ?? 'Failed to save M-Pesa settings.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Stack sx={{ gap: 2 }}>
+        {[1, 2, 3].map((i) => <Skeleton key={i} variant="rounded" height={56} />)}
+      </Stack>
+    );
+  }
+
+  const disabled = !isProfessional || !enabled;
+
+  return (
+    <Stack sx={{ gap: 4 }}>
+      <Paper sx={{ p: { xs: 3, md: 5 } }}>
+        <SectionHeader
+          icon="material-symbols:phonelink-ring-rounded"
+          title="M-Pesa Integration"
+          description="Accept rent, levy, and deposit payments via Safaricom M-Pesa STK Push. Requires a Safaricom Daraja account."
+          badge={isProfessional ? undefined : 'Professional'}
+        />
+
+        <Stack sx={{ gap: 3 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                disabled={!isProfessional}
+              />
+            }
+            label={
+              <Stack>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Enable M-Pesa payments
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isProfessional
+                    ? 'STK Push prompts will be available from the Payments page.'
+                    : 'Upgrade to Professional to enable M-Pesa integration.'}
+                </Typography>
+              </Stack>
+            }
+          />
+
+          <Divider />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={sandbox}
+                onChange={(e) => setSandbox(e.target.checked)}
+                disabled={disabled}
+              />
+            }
+            label={
+              <Stack>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Sandbox mode
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Use Safaricom sandbox for testing. Disable only when going live.
+                </Typography>
+              </Stack>
+            }
+          />
+
+          <Divider />
+
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Daraja API Credentials
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
+              From your app at developer.safaricom.co.ke. All fields required to enable STK Push.
+            </Typography>
+
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth size="small"
+                  label="Business Short Code"
+                  value={shortCode}
+                  onChange={(e) => setShortCode(e.target.value)}
+                  disabled={disabled}
+                  placeholder="e.g. 174379"
+                  helperText="Paybill or Till number"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth size="small"
+                  label="Consumer Key"
+                  value={consumerKey}
+                  onChange={(e) => setConsumerKey(e.target.value)}
+                  disabled={disabled}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth size="small"
+                  label="Consumer Secret"
+                  type="password"
+                  value={consumerSecret}
+                  onChange={(e) => setConsumerSecret(e.target.value)}
+                  disabled={disabled}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth size="small"
+                  label="Lipa Na M-Pesa Passkey"
+                  type="password"
+                  value={passkey}
+                  onChange={(e) => setPasskey(e.target.value)}
+                  disabled={disabled}
+                  helperText="From Daraja portal → Lipa Na M-Pesa → STK Push"
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </Stack>
+      </Paper>
+
+      {success && (
+        <Alert severity="success" onClose={() => setSuccess(false)}>
+          M-Pesa settings saved successfully.
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Box>
+        <Button variant="contained" loading={saving} onClick={handleSave} disabled={!isProfessional}>
+          Save M-Pesa Settings
+        </Button>
+      </Box>
+    </Stack>
+  );
+};
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 const TABS = [
-  { label: 'General',  icon: 'material-symbols:tune-rounded'          },
-  { label: 'Branding', icon: 'material-symbols:palette-outline-rounded' },
-  { label: 'SMS',      icon: 'material-symbols:sms-outline-rounded'    },
+  { label: 'General',  icon: 'material-symbols:tune-rounded'               },
+  { label: 'Branding', icon: 'material-symbols:palette-outline-rounded'     },
+  { label: 'SMS',      icon: 'material-symbols:sms-outline-rounded'         },
+  { label: 'M-Pesa',   icon: 'material-symbols:phonelink-ring-rounded'      },
 ];
 
 export default function StaffSettingsPage() {
@@ -546,6 +781,7 @@ export default function StaffSettingsPage() {
       {tab === 0 && <GeneralTab />}
       {tab === 1 && <BrandingTab />}
       {tab === 2 && <SmsTab />}
+      {tab === 3 && <MpesaTab />}
     </Box>
   );
 }

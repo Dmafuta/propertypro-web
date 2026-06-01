@@ -1,0 +1,33 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 15m
+          script: |
+            set -e
+
+            echo "==> Pulling latest frontend code..."
+            cd /root/propertypro-web
+            git pull
+
+            echo "==> Rebuilding and restarting web container..."
+            cd /root/propertypro-api/deploy
+            docker compose up --build -d web
+
+            echo "==> Done. Container status:"
+            docker ps --filter name=deploy-web-1 --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"

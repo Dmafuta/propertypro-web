@@ -47,6 +47,23 @@ public class UsersController(
         return Ok(new { total, page, pageSize, items = result });
     }
 
+    /// <summary>Returns roles that can be assigned to staff users (excludes SuperAdmin, inactive roles).</summary>
+    [HttpGet("available-roles")]
+    public async Task<IActionResult> GetAvailableRoles()
+    {
+        if (!tenant.IsResolved) return BadRequest();
+        await using var ctx = await factory.CreateDbContextAsync();
+
+        var roles = await ctx.Roles
+            .Where(r => r.IsActive && r.Name != "SuperAdmin")
+            .OrderBy(r => r.IsSystem ? 0 : 1)
+            .ThenBy(r => r.Name)
+            .Select(r => new { r.Id, r.Name, r.Description, r.IsSystem })
+            .ToListAsync();
+
+        return Ok(roles);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(string id)
     {

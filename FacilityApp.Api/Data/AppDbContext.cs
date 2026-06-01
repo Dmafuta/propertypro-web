@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FacilityApp.Api.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options, TenantContext tenantContext)
-    : IdentityDbContext<ApplicationUser>(options)
+    : IdentityDbContext<ApplicationUser, AppRole, string>(options)
 {
     private Guid CurrentTenantId => tenantContext.TenantId;
 
@@ -36,6 +36,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, TenantContext 
         // Rename Identity tables
         builder.Entity<ApplicationUser>().ToTable("users");
         builder.HasDefaultSchema("public");
+
+        // AppRole — store permissions as a native PostgreSQL integer array
+        builder.Entity<AppRole>()
+            .Property(r => r.Permissions)
+            .HasColumnType("integer[]")
+            .HasDefaultValueSql("'{}'::integer[]")
+            .IsRequired();
+        builder.Entity<AppRole>()
+            .Property(r => r.CreatedAt)
+            .HasDefaultValueSql("now()")
+            .IsRequired();
 
         // Global query filters — all tenant-scoped entities
         builder.Entity<Unit>()              .HasQueryFilter(e => e.TenantId == CurrentTenantId);

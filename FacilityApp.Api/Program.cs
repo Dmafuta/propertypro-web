@@ -33,7 +33,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(o =>
     o.Password.RequireNonAlphanumeric = false;
     o.User.RequireUniqueEmail         = true;
 })
-.AddRoles<IdentityRole>()
+.AddRoles<AppRole>()
 .AddSignInManager()
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -122,15 +122,26 @@ var app = builder.Build();
 // ── Migrate + seed roles ───────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var db          = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var roleMgr     = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var db      = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
 
     await db.Database.MigrateAsync();
 
-    string[] roles = ["SuperAdmin", "Admin", "Manager", "Receptionist", "Security", "Occupant"];
-    foreach (var role in roles)
-        if (!await roleMgr.RoleExistsAsync(role))
-            await roleMgr.CreateAsync(new IdentityRole(role));
+    // Seed / ensure system roles exist and are marked IsSystem = true
+    string[] systemRoles = ["SuperAdmin", "Admin", "Manager", "Receptionist", "Security", "Occupant"];
+    foreach (var roleName in systemRoles)
+    {
+        var existing = await roleMgr.FindByNameAsync(roleName);
+        if (existing is null)
+        {
+            await roleMgr.CreateAsync(new AppRole { Name = roleName, IsSystem = true, IsActive = true });
+        }
+        else if (!existing.IsSystem)
+        {
+            existing.IsSystem = true;
+            await roleMgr.UpdateAsync(existing);
+        }
+    }
 }
 
 // ── Middleware pipeline ────────────────────────────────────────────────────────

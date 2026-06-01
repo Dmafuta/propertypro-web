@@ -53,6 +53,14 @@ const superadminSitemap: MenuItem[] = [
     icon: 'material-symbols:settings-outline-rounded',
     items: [
       {
+        name: 'Roles & Permissions',
+        path: '/superadmin/roles',
+        pathName: 'superadmin-roles',
+        selectionPrefix: '/superadmin/roles',
+        icon: 'material-symbols:shield-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Announcements',
         path: '/superadmin/announcements',
         pathName: 'superadmin-announcements',

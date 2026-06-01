@@ -51,3 +51,13 @@ export const useActivateUser = () =>
     (_url: string, { arg }: { arg: string }) =>
       axiosInstance.patch(`/users/${arg}/activate`),
   );
+
+export interface AvailableRole {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+}
+
+export const useGetAvailableRoles = () =>
+  useSWR<AvailableRole[]>('/users/available-roles', axiosFetcher);

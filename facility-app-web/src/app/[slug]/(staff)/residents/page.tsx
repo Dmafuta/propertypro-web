@@ -11,7 +11,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -430,14 +429,15 @@ function ResidentDrawer({
   const isOwner = data?.userType === 'HomeOwner';
 
   return (
-    <Drawer
-      anchor="right"
+    <Dialog
       open={open}
-      onClose={() => onClose()}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 520 }, display: 'flex', flexDirection: 'column' } }}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{ sx: { display: 'flex', flexDirection: 'column', maxHeight: '90vh' } }}
     >
-      <>{/* Header */}
-      <Stack direction="row" sx={{ alignItems: 'center', p: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+      {/* Header */}
+      <Stack direction="row" sx={{ alignItems: 'center', p: 2.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
         {data && (
           <Avatar sx={{ bgcolor: isOwner ? 'secondary.lighter' : 'info.lighter',
             color: isOwner ? 'secondary.main' : 'info.main',
@@ -472,14 +472,14 @@ function ResidentDrawer({
       </Stack>
 
       {/* Tabs */}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2, flexShrink: 0 }}>
         <Tab label="Profile" />
         {isOwner && <Tab label="Owner" />}
         <Tab label="Units" />
         <Tab label="Vehicles" />
       </Tabs>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2.5 }}>
+      <Box sx={{ overflowY: 'auto', p: 2.5 }}>
         {isLoading && (
           <Stack sx={{ alignItems: 'center', pt: 6 }}>
             <CircularProgress />
@@ -571,8 +571,7 @@ function ResidentDrawer({
           </Stack>
         )}
       </Box>
-      </>
-    </Drawer>
+    </Dialog>
   );
 }
 

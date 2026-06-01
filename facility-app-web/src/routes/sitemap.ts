@@ -101,6 +101,21 @@ const sitemap: MenuItem[] = [
     ],
   },
   {
+    id: 'residents',
+    subheader: 'Residents',
+    icon: 'material-symbols:home-outline-rounded',
+    items: [
+      {
+        name: 'Residents',
+        path: facilityPaths.residents,
+        pathName: 'residents',
+        selectionPrefix: '/residents',
+        icon: 'material-symbols:home-outline-rounded',
+        active: true,
+      },
+    ],
+  },
+  {
     id: 'property',
     subheader: 'Property',
     icon: 'material-symbols:apartment-outline-rounded',

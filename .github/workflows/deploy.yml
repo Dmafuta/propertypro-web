@@ -27,7 +27,7 @@ jobs:
 
             echo "==> Rebuilding and restarting web container..."
             cd /root/propertypro-api/deploy
-            docker compose up --build -d web
+            docker compose up --build -d --no-deps web
 
             echo "==> Done. Container status:"
             docker ps --filter name=deploy-web-1 --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"

@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PasswordTextField from 'components/common/PasswordTextField';
+import axiosInstance from 'services/axios/axiosInstance';
 
 type Mode = 'staff' | 'resident' | 'superadmin';
 
@@ -56,6 +57,45 @@ export default function FacilityLoginForm({ slug, mode }: FacilityLoginFormProps
     const tenantSlug = mode === 'superadmin' ? 'platform' : slug;
     const staffOnly  = mode === 'staff' ? 'true' : 'false';
 
+    // Superadmin login: call the API directly so we can detect the 2FA response
+    // without relying on NextAuth's error message passing (which strips custom messages).
+    if (mode === 'superadmin') {
+      try {
+        const response: any = await axiosInstance.post('/auth/superadmin/login', {
+          email: data.email,
+          password: data.password,
+        });
+
+        if (response?.requiresTwoFactor) {
+          sessionStorage.setItem('2fa_temp_token',  response.tempToken ?? '');
+          sessionStorage.setItem('2fa_masked_phone', response.maskedPhone ?? '');
+          sessionStorage.setItem('2fa_tenant_slug',  tenantSlug);
+          router.push('/superadmin/2fa');
+          return;
+        }
+
+        // No 2FA — sign in directly with the returned tokens
+        const res = await signIn('verified-token', {
+          redirect:     false,
+          accessToken:  response.accessToken,
+          refreshToken: response.refreshToken,
+          userData:     JSON.stringify(response.user),
+        });
+
+        if (res?.ok) {
+          router.push('/superadmin/dashboard');
+          router.refresh();
+        } else {
+          setError('root.credential', { type: 'manual', message: 'Sign-in failed. Please try again.' });
+        }
+      } catch (e: any) {
+        const msg = e?.data?.error || e?.data?.message || 'Invalid email or password.';
+        setError('root.credential', { type: 'manual', message: msg });
+      }
+      return;
+    }
+
+    // Staff / resident login — go through NextAuth credentials as before
     const res = await signIn('credentials', {
       email:      data.email,
       password:   data.password,
@@ -65,16 +105,6 @@ export default function FacilityLoginForm({ slug, mode }: FacilityLoginFormProps
     });
 
     if (!res) return;
-
-    // 2FA required — save temp token and redirect
-    if (res.error?.startsWith('2FA_REQUIRED|')) {
-      const parts = res.error.split('|');
-      sessionStorage.setItem('2fa_temp_token',   parts[1] ?? '');
-      sessionStorage.setItem('2fa_masked_phone',  parts[2] ?? '');
-      sessionStorage.setItem('2fa_tenant_slug',   tenantSlug);
-      router.push(mode === 'superadmin' ? '/superadmin/2fa' : `/${slug}/2fa`);
-      return;
-    }
 
     if (res.error) {
       const msg =
@@ -86,9 +116,7 @@ export default function FacilityLoginForm({ slug, mode }: FacilityLoginFormProps
     }
 
     if (res.ok) {
-      if (mode === 'superadmin') {
-        router.push('/superadmin/dashboard');
-      } else if (mode === 'resident') {
+      if (mode === 'resident') {
         router.push(`/${slug}/resident/dashboard`);
       } else {
         router.push(`/${slug}/dashboard`);

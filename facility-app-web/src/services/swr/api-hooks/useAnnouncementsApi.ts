@@ -33,7 +33,7 @@ export interface CreateAnnouncementPayload {
   expiresAt?: string | null;
 }
 
-// ── Hooks ─────────────────────────────────────────────────────────────────────
+// ── Hooks (tenant-scoped) ─────────────────────────────────────────────────────
 export const useGetAnnouncements = () =>
   useSWR<AnnouncementDto[]>('/announcements', axiosFetcher);
 
@@ -56,4 +56,37 @@ export const useDeleteAnnouncement = () =>
     '/announcements/delete',
     (_url: string, { arg }: { arg: string }) =>
       axiosInstance.delete(`/announcements/${arg}`),
+  );
+
+// ── Hooks (superadmin platform-level) ─────────────────────────────────────────
+export interface CreatePlatformAnnouncementPayload {
+  title: string;
+  body: string;
+  category: number;
+  audience: number; // 0=All, 1=Starter, 2=Professional
+  expiresAt?: string | null;
+}
+
+export const useGetPlatformAnnouncements = () =>
+  useSWR<AnnouncementDto[]>('/superadmin/announcements', axiosFetcher);
+
+export const useCreatePlatformAnnouncement = () =>
+  useSWRMutation(
+    '/superadmin/announcements/create',
+    (_url: string, { arg }: { arg: CreatePlatformAnnouncementPayload }) =>
+      axiosInstance.post<AnnouncementDto>('/superadmin/announcements', arg),
+  );
+
+export const useTogglePlatformAnnouncement = () =>
+  useSWRMutation(
+    '/superadmin/announcements/toggle',
+    (_url: string, { arg }: { arg: string }) =>
+      axiosInstance.patch(`/superadmin/announcements/${arg}/toggle`, {}),
+  );
+
+export const useDeletePlatformAnnouncement = () =>
+  useSWRMutation(
+    '/superadmin/announcements/delete',
+    (_url: string, { arg }: { arg: string }) =>
+      axiosInstance.delete(`/superadmin/announcements/${arg}`),
   );

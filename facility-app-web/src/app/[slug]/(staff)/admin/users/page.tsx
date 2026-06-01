@@ -27,6 +27,7 @@ import {
   StaffUser,
   useActivateUser,
   useDeactivateUser,
+  useGetAvailableRoles,
   useGetUsers,
   useInviteUser,
   useUpdateUserRole,
@@ -34,22 +35,23 @@ import {
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
-const STAFF_ROLES = ['Admin', 'Manager', 'HrManager', 'Receptionist', 'Security'] as const;
-
 type RoleColor = 'error' | 'warning' | 'secondary' | 'info' | 'success' | 'neutral';
 
+const ROLE_COLORS: Record<string, RoleColor> = {
+  Admin:        'error',
+  Manager:      'warning',
+  HrManager:    'secondary',
+  Receptionist: 'info',
+  Security:     'success',
+};
+
 function getRoleColor(role: string): RoleColor {
-  if (role === 'Admin')        return 'error';
-  if (role === 'Manager')      return 'warning';
-  if (role === 'HrManager')    return 'secondary';
-  if (role === 'Receptionist') return 'info';
-  if (role === 'Security')     return 'success';
-  return 'neutral';
+  return ROLE_COLORS[role] ?? 'neutral';
 }
 
 function getRoleLabel(role: string): string {
-  if (role === 'HrManager') return 'HR Manager';
-  return role;
+  // Split camelCase into words: "HrManager" → "Hr Manager", "Receptionist" → "Receptionist"
+  return role.replace(/([A-Z])/g, ' $1').trim();
 }
 
 function getInitials(name: string) {
@@ -62,7 +64,7 @@ function getInitials(name: string) {
 }
 
 function primaryRole(roles: string[]): string | null {
-  return STAFF_ROLES.find((r) => roles.includes(r)) ?? null;
+  return roles[0] ?? null;
 }
 
 // ── Invite dialog ─────────────────────────────────────────────────────────────
@@ -159,6 +161,7 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
   const { trigger: updateRole,   isMutating: savingRole }   = useUpdateUserRole();
   const { trigger: deactivate,   isMutating: deactivating } = useDeactivateUser();
   const { trigger: activate,     isMutating: activating }   = useActivateUser();
+  const { data: availableRoles = [] }                        = useGetAvailableRoles();
 
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleError,    setRoleError]    = useState<string | null>(null);
@@ -318,8 +321,8 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
                     onChange={(e) => { setSelectedRole(e.target.value); setRoleSuccess(false); }}
                   >
                     <MenuItem value=""><em>No role</em></MenuItem>
-                    {STAFF_ROLES.map((r) => (
-                      <MenuItem key={r} value={r}>{getRoleLabel(r)}</MenuItem>
+                    {availableRoles.map((r) => (
+                      <MenuItem key={r.name} value={r.name}>{getRoleLabel(r.name)}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>

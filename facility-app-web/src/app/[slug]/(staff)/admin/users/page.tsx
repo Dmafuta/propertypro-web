@@ -11,7 +11,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -209,15 +208,15 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
   };
 
   return (
-    <Drawer
-      anchor="right"
+    <Dialog
       open={!!user}
       onClose={onClose}
-      SlideProps={{ onEntering: handleOpen }}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 400 }, p: 4 } }}
+      maxWidth="sm"
+      fullWidth
+      TransitionProps={{ onEntering: handleOpen }}
     >
       {user && (
-        <Stack sx={{ height: 1 }}>
+        <Stack sx={{ p: 4, gap: 0 }}>
           {/* Header */}
           <Stack direction="row" sx={{ gap: 2, alignItems: 'center', mb: 4 }}>
             <Avatar
@@ -339,7 +338,7 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
           </Stack>
 
           {/* Footer: joined date */}
-          <Box sx={{ mt: 'auto', pt: 3 }}>
+          <Box sx={{ pt: 3 }}>
             <Typography variant="caption" color="text.secondary">
               Joined {new Date(user.createdAt).toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'short', year: 'numeric',
@@ -348,7 +347,7 @@ const UserDrawer = ({ user, currentUserId, onClose, onRefresh }: UserDrawerProps
           </Box>
         </Stack>
       )}
-    </Drawer>
+    </Dialog>
   );
 };
 

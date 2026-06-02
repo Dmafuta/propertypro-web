@@ -134,7 +134,17 @@ export interface MeterInstallationReport {
   generatedAt: string;
 }
 
+export interface MeterListItemDto extends MeterDto {
+  unitId: string;
+  unitNumber: string;
+  block: string | null;
+  unacknowledgedAlerts: number;
+}
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
+export const useGetAllMeters = () =>
+  useSWR<MeterListItemDto[]>('/meters', axiosFetcher);
+
 export const useGetMeters = (unitId: string | null) =>
   useSWR<MeterDto[]>(unitId ? `/meters/unit/${unitId}` : null, axiosFetcher);
 

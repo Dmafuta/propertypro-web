@@ -142,6 +142,13 @@ const sitemap: MenuItem[] = [
         active: true,
       },
       {
+        name: 'Utilities',
+        path: facilityPaths.utilities,
+        pathName: 'utilities',
+        icon: 'material-symbols:electric-meter-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Facilities',
         path: facilityPaths.facilities,
         pathName: 'facilities',

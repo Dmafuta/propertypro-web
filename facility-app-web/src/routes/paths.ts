@@ -242,6 +242,7 @@ export const facilityPaths = {
   parcels:            (slug: string) => `/${slug}/parcels`,
   incidents:          (slug: string) => `/${slug}/incidents`,
   facilities:         (slug: string) => `/${slug}/facilities`,
+  utilities:          (slug: string) => `/${slug}/utilities`,
   payments:           (slug: string) => `/${slug}/payments`,
   reports:            (slug: string) => `/${slug}/reports`,
   settings:           (slug: string) => `/${slug}/settings`,

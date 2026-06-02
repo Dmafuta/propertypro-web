@@ -11,7 +11,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -953,16 +952,16 @@ function UnitDetailDrawer({
   };
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 520 }, p: 0 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+      PaperProps={{ sx: { maxHeight: '90vh', display: 'flex', flexDirection: 'column' } }}>
       {!unit ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 6 }}>
           <CircularProgress />
         </Box>
       ) : (
         <>
-          {/* Drawer header */}
-          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+          {/* Header */}
+          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -984,13 +983,13 @@ function UnitDetailDrawer({
             </Stack>
           </Box>
 
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 3, borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 3, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
             <Tab label="Details" />
             <Tab label="Residents" />
             <Tab label={`Meters (${unit.meters?.length ?? 0})`} />
           </Tabs>
 
-          <Box sx={{ p: 3, overflow: 'auto', flex: 1 }}>
+          <Box sx={{ p: 3, overflowY: 'auto' }}>
             {/* Details Tab */}
             {tab === 0 && (
               <Stack spacing={2}>
@@ -1144,7 +1143,7 @@ function UnitDetailDrawer({
           </Box>
         </>
       )}
-    </Drawer>
+    </Dialog>
   );
 }
 

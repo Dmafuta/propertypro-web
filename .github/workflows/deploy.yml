@@ -23,6 +23,7 @@ jobs:
 
             echo "==> Pulling latest frontend code..."
             cd /root/propertypro-web
+            git fetch --prune
             git pull
 
             echo "==> Rebuilding and restarting web container..."

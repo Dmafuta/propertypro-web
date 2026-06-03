@@ -198,6 +198,13 @@ const sitemap: MenuItem[] = [
         active: true,
       },
       {
+        name: 'Consumables',
+        path: facilityPaths.consumables,
+        pathName: 'consumables',
+        icon: 'material-symbols:inventory-2-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Payments',
         path: facilityPaths.payments,
         pathName: 'payments',

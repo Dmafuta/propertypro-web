@@ -7,6 +7,7 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
+import Grid from '@mui/material/Grid';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -1150,6 +1151,14 @@ function UnitDetailDrawer({
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
+
+const KPI_CARDS = [
+  { label: 'Total Units',  color: 'primary', icon: 'material-symbols:home-outline-rounded',          filterVal: -1 },
+  { label: 'Occupied',     color: 'info',    icon: 'material-symbols:person-outline-rounded',         filterVal: 1  },
+  { label: 'Available',    color: 'success', icon: 'material-symbols:check-circle-outline-rounded',   filterVal: 0  },
+  { label: 'Maintenance',  color: 'error',   icon: 'material-symbols:build-outline-rounded',          filterVal: 3  },
+];
+
 export default function UnitsPage() {
   const { data: units = [], isLoading, mutate } = useGetUnits();
   const { trigger: del } = useDeleteUnit();
@@ -1187,11 +1196,13 @@ export default function UnitsPage() {
   };
 
   const stats = useMemo(() => ({
-    total: units.length,
-    occupied: units.filter(u => u.status === 1).length,
-    available: units.filter(u => u.status === 0).length,
+    total:       units.length,
+    occupied:    units.filter(u => u.status === 1).length,
+    available:   units.filter(u => u.status === 0).length,
     maintenance: units.filter(u => u.status === 3).length,
   }), [units]);
+
+  const kpiValues = [stats.total, stats.occupied, stats.available, stats.maintenance];
 
   const columns: GridColDef<UnitDto>[] = [
     {
@@ -1272,62 +1283,170 @@ export default function UnitsPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
-      {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Units</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage all units, residents, and utility meters
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
-          onClick={() => { setEditing(null); setFormOpen(true); }}>
+      {/* ── Page Header ────────────────────────────────────────────────────── */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ sm: 'center' }}
+        gap={2}
+        sx={{ mb: 4 }}
+      >
+        <Stack direction="row" gap={1.5} alignItems="center">
+          <Avatar
+            variant="rounded"
+            sx={{ width: 44, height: 44, bgcolor: 'primary.lighter', borderRadius: 2 }}
+          >
+            <IconifyIcon icon="material-symbols:meeting-room-outline-rounded" sx={{ fontSize: 26, color: 'primary.main' }} />
+          </Avatar>
+          <Box>
+            <Stack direction="row" gap={1} alignItems="center">
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Units</Typography>
+              {stats.total > 0 && (
+                <Chip label={stats.total} color="primary" variant="soft" size="small" />
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Manage all units, residents, and utility meters
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Button
+          variant="contained"
+          startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+          onClick={() => { setEditing(null); setFormOpen(true); }}
+        >
           Add Unit
         </Button>
       </Stack>
 
-      {/* Stat chips */}
-      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <Chip label={`${stats.total} Total`} color="neutral" variant="soft" onClick={() => setStatusFilter(-1)} />
-        <Chip label={`${stats.occupied} Occupied`} color="info" variant="soft" onClick={() => setStatusFilter(1)} />
-        <Chip label={`${stats.available} Available`} color="success" variant="soft" onClick={() => setStatusFilter(0)} />
-        {stats.maintenance > 0 && (
-          <Chip label={`${stats.maintenance} Maintenance`} color="error" variant="soft" onClick={() => setStatusFilter(3)} />
-        )}
-      </Stack>
+      {/* ── KPI Stat Cards ─────────────────────────────────────────────────── */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {KPI_CARDS.map(({ label, color, icon, filterVal }, i) => {
+          const value    = kpiValues[i];
+          const isActive = statusFilter === filterVal;
+          return (
+            <Grid key={label} size={{ xs: 6, sm: 3 }}>
+              <Paper
+                onClick={() => setStatusFilter(isActive && filterVal !== -1 ? -1 : filterVal)}
+                sx={{
+                  p: 2.5,
+                  cursor: 'pointer',
+                  border: '2px solid',
+                  borderColor: isActive ? `${color}.main` : 'transparent',
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: `${color}.light`, transform: 'translateY(-1px)', boxShadow: 3 },
+                }}
+              >
+                <Avatar
+                  variant="rounded"
+                  sx={{ width: 40, height: 40, bgcolor: `${color}.lighter`, borderRadius: 1.5, mb: 1.5 }}
+                >
+                  <IconifyIcon icon={icon} sx={{ fontSize: 22, color: `${color}.main` }} />
+                </Avatar>
+                <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1 }}>{value}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  {label}
+                </Typography>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-      {/* Filters */}
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <TextField size="small" placeholder="Search unit, block, owner…" value={search}
-          onChange={e => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><IconifyIcon icon="material-symbols:search-rounded" /></InputAdornment> }}
-          sx={{ width: 280 }} />
-        <FormControl size="small" sx={{ width: 180 }}>
-          <InputLabel>Status</InputLabel>
-          <Select label="Status" value={statusFilter} onChange={e => setStatusFilter(+e.target.value)}>
-            <MenuItem value={-1}>All Statuses</MenuItem>
-            {Object.entries(UNIT_STATUS).map(([v, l]) => <MenuItem key={v} value={+v}>{l}</MenuItem>)}
-          </Select>
-        </FormControl>
-        {(search || statusFilter >= 0) && (
-          <Button size="small" onClick={() => { setSearch(''); setStatusFilter(-1); }}>Clear</Button>
-        )}
-      </Stack>
-
-      {/* DataGrid */}
+      {/* ── Filter Bar + Table ─────────────────────────────────────────────── */}
       <Paper>
-        <DataGrid
-          rows={filtered}
-          columns={columns}
-          loading={isLoading}
-          autoHeight
-          rowHeight={56}
-          columnHeaderHeight={48}
-          disableRowSelectionOnClick
-          disableColumnMenu
-          pageSizeOptions={[25, 50, 100]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-        />
+        {/* Filter row */}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          gap={1.5}
+          sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}
+        >
+          <TextField
+            size="small"
+            placeholder="Search unit, block, owner…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            sx={{ flex: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 20, color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              endAdornment: search ? (
+                <InputAdornment position="end">
+                  <IconifyIcon
+                    icon="material-symbols:close-rounded"
+                    sx={{ fontSize: 18, color: 'text.secondary', cursor: 'pointer' }}
+                    onClick={() => setSearch('')}
+                  />
+                </InputAdornment>
+              ) : null,
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Status</InputLabel>
+            <Select label="Status" value={statusFilter} onChange={e => setStatusFilter(+e.target.value)}>
+              <MenuItem value={-1}>All Statuses</MenuItem>
+              {Object.entries(UNIT_STATUS).map(([v, l]) => <MenuItem key={v} value={+v}>{l}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Stack>
+
+        {/* Empty — no units at all */}
+        {!isLoading && units.length === 0 && (
+          <Stack alignItems="center" gap={1.5} sx={{ py: 10 }}>
+            <Avatar
+              variant="rounded"
+              sx={{ width: 72, height: 72, bgcolor: 'background.elevation1', borderRadius: 3 }}
+            >
+              <IconifyIcon icon="material-symbols:meeting-room-outline-rounded" sx={{ fontSize: 40, color: 'text.disabled' }} />
+            </Avatar>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }} color="text.secondary">
+              No units yet
+            </Typography>
+            <Typography variant="body2" color="text.disabled">
+              Add your first unit to get started
+            </Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 0.5 }}
+              startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+              onClick={() => { setEditing(null); setFormOpen(true); }}
+            >
+              Add Unit
+            </Button>
+          </Stack>
+        )}
+
+        {/* Empty — filters return nothing */}
+        {!isLoading && units.length > 0 && filtered.length === 0 && (
+          <Stack alignItems="center" gap={1} sx={{ py: 8 }}>
+            <IconifyIcon icon="material-symbols:search-off-rounded" sx={{ fontSize: 40, color: 'text.disabled' }} />
+            <Typography variant="body2" color="text.disabled">No units match the current filters</Typography>
+            <Button size="small" onClick={() => { setSearch(''); setStatusFilter(-1); }}>
+              Clear filters
+            </Button>
+          </Stack>
+        )}
+
+        {/* DataGrid */}
+        {(isLoading || filtered.length > 0) && (
+          <DataGrid
+            rows={filtered}
+            columns={columns}
+            loading={isLoading}
+            autoHeight
+            rowHeight={56}
+            columnHeaderHeight={48}
+            disableRowSelectionOnClick
+            disableColumnMenu
+            pageSizeOptions={[25, 50, 100]}
+            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            sx={{ border: 0 }}
+          />
+        )}
       </Paper>
 
       {/* Unit Form Dialog */}

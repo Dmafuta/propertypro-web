@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import {
   useGetConsumableTypes,
   useGetConsumableIssuances,
+  useGetRestockLog,
   useCreateConsumableType,
   useRestockConsumable,
   useToggleConsumableType,
@@ -134,14 +135,16 @@ function RestockDialog({ type, onClose }: { type: ConsumableTypeDto | null; onCl
   const { trigger: restock, isMutating } = useRestockConsumable();
   const { enqueueSnackbar } = useSnackbar();
   const [qty, setQty] = useState(1);
+  const [notes, setNotes] = useState('');
 
   const handleSubmit = async () => {
     if (!type) return;
     try {
-      await restock({ id: type.id, quantity: qty });
+      await restock({ id: type.id, quantity: qty, notes: notes || null });
       enqueueSnackbar(`Added ${qty} ${type.unit} to stock`, { variant: 'success' });
       onClose();
       setQty(1);
+      setNotes('');
     } catch (e: any) {
       enqueueSnackbar(e?.response?.data?.error ?? 'Restock failed', { variant: 'error' });
     }
@@ -166,6 +169,14 @@ function RestockDialog({ type, onClose }: { type: ConsumableTypeDto | null; onCl
             value={qty}
             onChange={e => setQty(Math.max(1, Number(e.target.value)))}
             InputProps={{ endAdornment: <InputAdornment position="end">{type?.unit}</InputAdornment> }}
+            fullWidth
+          />
+          <TextField
+            label="Notes (optional)"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="e.g. Supplier name, batch no."
+            multiline rows={2}
             fullWidth
           />
           <Button variant="contained" disabled={qty < 1 || isMutating} onClick={handleSubmit} fullWidth>
@@ -207,20 +218,8 @@ function AddTypeDialog({ open, onClose }: { open: boolean; onClose: () => void }
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
-          <TextField
-            label="Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="e.g. Garbage Bags"
-            fullWidth
-          />
-          <TextField
-            label="Unit"
-            value={unit}
-            onChange={e => setUnit(e.target.value)}
-            placeholder="e.g. bags, rolls, pieces"
-            fullWidth
-          />
+          <TextField label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Garbage Bags" fullWidth />
+          <TextField label="Unit" value={unit} onChange={e => setUnit(e.target.value)} placeholder="e.g. bags, rolls, pieces" fullWidth />
           <TextField
             label="Low stock alert threshold (optional)"
             type="number"
@@ -229,12 +228,7 @@ function AddTypeDialog({ open, onClose }: { open: boolean; onClose: () => void }
             helperText="Show a warning when stock falls below this number"
             fullWidth
           />
-          <Button
-            variant="contained"
-            disabled={!name.trim() || !unit.trim() || isMutating}
-            onClick={handleSubmit}
-            fullWidth
-          >
+          <Button variant="contained" disabled={!name.trim() || !unit.trim() || isMutating} onClick={handleSubmit} fullWidth>
             Create
           </Button>
         </Stack>
@@ -246,7 +240,7 @@ function AddTypeDialog({ open, onClose }: { open: boolean; onClose: () => void }
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ConsumablesPage() {
   const { data: types = [], mutate: mutateTypes } = useGetConsumableTypes();
-  const { data: issuances = [], mutate: mutateIssuances } = useGetConsumableIssuances();
+  const { data: restockLogs = [], mutate: mutateRestockLogs } = useGetRestockLog();
   const { trigger: toggleType } = useToggleConsumableType();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -254,8 +248,22 @@ export default function ConsumablesPage() {
   const [issueOpen, setIssueOpen] = useState(false);
   const [addTypeOpen, setAddTypeOpen] = useState(false);
   const [restockType, setRestockType] = useState<ConsumableTypeDto | null>(null);
+
+  // Issuances tab filters
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  // Restocks tab filters
+  const [restockTypeFilter, setRestockTypeFilter] = useState('');
+  const [restockSearch, setRestockSearch] = useState('');
+
+  const { data: issuances = [], mutate: mutateIssuances } = useGetConsumableIssuances({
+    typeId: typeFilter || undefined,
+    from: fromDate ? new Date(fromDate).toISOString() : undefined,
+    to: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined,
+  });
 
   const handleToggle = async (id: string) => {
     try {
@@ -272,6 +280,7 @@ export default function ConsumablesPage() {
     setRestockType(null);
     mutateTypes();
     mutateIssuances();
+    mutateRestockLogs();
   };
 
   // KPIs
@@ -286,21 +295,32 @@ export default function ConsumablesPage() {
       .reduce((s, i) => s + i.quantity, 0);
   }, [issuances]);
 
-  // Filtered issuances
+  // Client-side search filter on issuances (type + date already filtered server-side)
   const filteredIssuances = useMemo(() => {
-    let rows = issuances;
-    if (typeFilter) rows = rows.filter(i => i.consumableTypeId === typeFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      rows = rows.filter(i =>
-        i.unitNumber.toLowerCase().includes(q) ||
-        i.consumableTypeName.toLowerCase().includes(q) ||
-        (i.block ?? '').toLowerCase().includes(q) ||
-        i.issuedBy.toLowerCase().includes(q),
+    if (!search) return issuances;
+    const q = search.toLowerCase();
+    return issuances.filter(i =>
+      i.unitNumber.toLowerCase().includes(q) ||
+      i.consumableTypeName.toLowerCase().includes(q) ||
+      (i.block ?? '').toLowerCase().includes(q) ||
+      i.issuedBy.toLowerCase().includes(q),
+    );
+  }, [issuances, search]);
+
+  // Restock log filters (client-side)
+  const filteredRestockLogs = useMemo(() => {
+    let rows = restockLogs;
+    if (restockTypeFilter) rows = rows.filter(r => r.consumableTypeId === restockTypeFilter);
+    if (restockSearch) {
+      const q = restockSearch.toLowerCase();
+      rows = rows.filter(r =>
+        r.consumableTypeName.toLowerCase().includes(q) ||
+        r.restockedBy.toLowerCase().includes(q) ||
+        (r.notes ?? '').toLowerCase().includes(q),
       );
     }
     return rows;
-  }, [issuances, typeFilter, search]);
+  }, [restockLogs, restockTypeFilter, restockSearch]);
 
   const issuanceColumns: GridColDef[] = [
     {
@@ -317,10 +337,21 @@ export default function ConsumablesPage() {
       valueFormatter: (v: string) => dayjs(v).format('DD MMM YYYY'),
     },
     { field: 'issuedBy', headerName: 'Issued By', flex: 1 },
+    { field: 'notes', headerName: 'Notes', flex: 1.5, renderCell: ({ value }) => value ?? '—' },
+  ];
+
+  const restockColumns: GridColDef[] = [
+    { field: 'consumableTypeName', headerName: 'Consumable', flex: 1 },
     {
-      field: 'notes', headerName: 'Notes', flex: 1.5,
-      renderCell: ({ value }) => value ?? '—',
+      field: 'quantity', headerName: 'Qty Added', width: 110,
+      renderCell: ({ row }) => `+${row.quantity} ${row.consumableUnit}`,
     },
+    {
+      field: 'createdAt', headerName: 'Date', width: 130,
+      valueFormatter: (v: string) => dayjs(v).format('DD MMM YYYY'),
+    },
+    { field: 'restockedBy', headerName: 'Restocked By', flex: 1 },
+    { field: 'notes', headerName: 'Notes', flex: 1.5, renderCell: ({ value }) => value ?? '—' },
   ];
 
   return (
@@ -354,36 +385,19 @@ export default function ConsumablesPage() {
 
       {/* KPI chips */}
       <Stack direction="row" flexWrap="wrap" gap={1.5} mb={3}>
-        <Chip
-          icon={<Icon icon="material-symbols:inventory-2-outline-rounded" />}
-          label={`${types.length} Types`}
-          variant="outlined"
-        />
-        <Chip
-          icon={<Icon icon="material-symbols:check-circle-outline-rounded" />}
-          label={`${activeTypes} Active`}
-          color="success"
-          variant="outlined"
-        />
+        <Chip icon={<Icon icon="material-symbols:inventory-2-outline-rounded" />} label={`${types.length} Types`} variant="outlined" />
+        <Chip icon={<Icon icon="material-symbols:check-circle-outline-rounded" />} label={`${activeTypes} Active`} color="success" variant="outlined" />
         {lowStockCount > 0 && (
-          <Chip
-            icon={<Icon icon="material-symbols:warning-outline-rounded" />}
-            label={`${lowStockCount} Low Stock`}
-            color="warning"
-            variant="outlined"
-          />
+          <Chip icon={<Icon icon="material-symbols:warning-outline-rounded" />} label={`${lowStockCount} Low Stock`} color="warning" variant="outlined" />
         )}
-        <Chip
-          icon={<Icon icon="material-symbols:output-rounded" />}
-          label={`${issuedThisMonth} issued this month`}
-          variant="outlined"
-        />
+        <Chip icon={<Icon icon="material-symbols:output-rounded" />} label={`${issuedThisMonth} issued this month`} variant="outlined" />
       </Stack>
 
       {/* Tabs */}
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Stock" />
         <Tab label="Issuances" />
+        <Tab label="Restock History" />
       </Tabs>
 
       {/* ── Stock Tab ── */}
@@ -392,12 +406,8 @@ export default function ConsumablesPage() {
           {types.length === 0 && (
             <Paper variant="outlined" sx={{ p: 6, textAlign: 'center' }}>
               <Icon icon="material-symbols:inventory-2-outline-rounded" width={48} style={{ opacity: 0.3 }} />
-              <Typography color="text.secondary" mt={1}>
-                No consumable types yet. Add one to get started.
-              </Typography>
-              <Button sx={{ mt: 2 }} variant="contained" onClick={() => setAddTypeOpen(true)}>
-                Add Type
-              </Button>
+              <Typography color="text.secondary" mt={1}>No consumable types yet. Add one to get started.</Typography>
+              <Button sx={{ mt: 2 }} variant="contained" onClick={() => setAddTypeOpen(true)}>Add Type</Button>
             </Paper>
           )}
           {types.map(type => {
@@ -410,19 +420,13 @@ export default function ConsumablesPage() {
                       <Typography fontWeight={600}>{type.name}</Typography>
                       {!type.isActive && <Chip label="Inactive" size="small" />}
                       {isLow && (
-                        <Chip
-                          label="Low Stock"
-                          size="small"
-                          color="warning"
-                          icon={<Icon icon="material-symbols:warning-outline-rounded" width={14} />}
-                        />
+                        <Chip label="Low Stock" size="small" color="warning"
+                          icon={<Icon icon="material-symbols:warning-outline-rounded" width={14} />} />
                       )}
                     </Stack>
                     <Typography variant="h4" fontWeight={700} mt={0.5}>
                       {type.currentStock}
-                      <Typography component="span" variant="body2" color="text.secondary" ml={0.5}>
-                        {type.unit}
-                      </Typography>
+                      <Typography component="span" variant="body2" color="text.secondary" ml={0.5}>{type.unit}</Typography>
                     </Typography>
                     {type.lowStockThreshold != null && (
                       <Typography variant="caption" color="text.secondary">
@@ -432,8 +436,7 @@ export default function ConsumablesPage() {
                   </Box>
                   <Stack direction="row" gap={1} alignItems="center">
                     <Button
-                      size="small"
-                      variant="outlined"
+                      size="small" variant="outlined"
                       startIcon={<Icon icon="material-symbols:add-rounded" />}
                       onClick={() => setRestockType(type)}
                       disabled={!type.isActive}
@@ -442,12 +445,7 @@ export default function ConsumablesPage() {
                     </Button>
                     <Tooltip title={type.isActive ? 'Deactivate' : 'Activate'}>
                       <IconButton size="small" onClick={() => handleToggle(type.id)}>
-                        <Icon
-                          icon={type.isActive
-                            ? 'material-symbols:toggle-on-rounded'
-                            : 'material-symbols:toggle-off-rounded'}
-                          width={24}
-                        />
+                        <Icon icon={type.isActive ? 'material-symbols:toggle-on-rounded' : 'material-symbols:toggle-off-rounded'} width={24} />
                       </IconButton>
                     </Tooltip>
                   </Stack>
@@ -461,25 +459,68 @@ export default function ConsumablesPage() {
       {/* ── Issuances Tab ── */}
       {tab === 1 && (
         <Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} mb={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} flexWrap="wrap" gap={1.5} mb={2}>
             <TextField
               size="small"
               placeholder="Search unit, consumable, issued by…"
               value={search}
               onChange={e => setSearch(e.target.value)}
               InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Icon icon="material-symbols:search-rounded" />
-                  </InputAdornment>
-                ),
+                startAdornment: <InputAdornment position="start"><Icon icon="material-symbols:search-rounded" /></InputAdornment>,
+              }}
+              sx={{ flex: 1, minWidth: 200 }}
+            />
+            <TextField
+              select size="small" label="Consumable" value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)} sx={{ minWidth: 160 }}
+            >
+              <MenuItem value="">All types</MenuItem>
+              {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+            </TextField>
+            <TextField
+              size="small" label="From" type="date" value={fromDate}
+              onChange={e => setFromDate(e.target.value)}
+              InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
+            />
+            <TextField
+              size="small" label="To" type="date" value={toDate}
+              onChange={e => setToDate(e.target.value)}
+              InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
+            />
+            {(fromDate || toDate) && (
+              <Button size="small" onClick={() => { setFromDate(''); setToDate(''); }}>Clear dates</Button>
+            )}
+          </Stack>
+
+          <DataGrid
+            rows={filteredIssuances}
+            columns={issuanceColumns}
+            autoHeight
+            pageSizeOptions={[20, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
+            disableRowSelectionOnClick
+            sx={{ border: 0 }}
+          />
+        </Box>
+      )}
+
+      {/* ── Restock History Tab ── */}
+      {tab === 2 && (
+        <Box>
+          <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} mb={2}>
+            <TextField
+              size="small"
+              placeholder="Search consumable, restocked by, notes…"
+              value={restockSearch}
+              onChange={e => setRestockSearch(e.target.value)}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><Icon icon="material-symbols:search-rounded" /></InputAdornment>,
               }}
               sx={{ flex: 1 }}
             />
             <TextField
-              select size="small" label="Consumable" value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)}
-              sx={{ minWidth: 180 }}
+              select size="small" label="Consumable" value={restockTypeFilter}
+              onChange={e => setRestockTypeFilter(e.target.value)} sx={{ minWidth: 180 }}
             >
               <MenuItem value="">All types</MenuItem>
               {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
@@ -487,8 +528,8 @@ export default function ConsumablesPage() {
           </Stack>
 
           <DataGrid
-            rows={filteredIssuances}
-            columns={issuanceColumns}
+            rows={filteredRestockLogs}
+            columns={restockColumns}
             autoHeight
             pageSizeOptions={[20, 50]}
             initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}

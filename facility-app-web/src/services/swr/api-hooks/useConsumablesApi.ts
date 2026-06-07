@@ -43,6 +43,17 @@ export interface ConsumableIssuanceForUnitDto {
   createdAt: string;
 }
 
+export interface ConsumableRestockLogDto {
+  id: string;
+  consumableTypeId: string;
+  consumableTypeName: string;
+  consumableUnit: string;
+  quantity: number;
+  restockedBy: string;
+  notes: string | null;
+  createdAt: string;
+}
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 export const useGetConsumableTypes = () =>
   useSWR<ConsumableTypeDto[]>('/consumables/types', axiosFetcher);
@@ -72,12 +83,17 @@ export const useCreateConsumableType = () =>
 
 export const useRestockConsumable = () =>
   useSWRMutation('/consumables/restock', (_url: string, { arg }: { arg: {
-    id: string; quantity: number;
-  }}) => axiosInstance.patch(`/consumables/types/${arg.id}/restock`, { quantity: arg.quantity }));
+    id: string; quantity: number; notes?: string | null;
+  }}) => axiosInstance.patch(`/consumables/types/${arg.id}/restock`, { quantity: arg.quantity, notes: arg.notes }));
 
 export const useToggleConsumableType = () =>
   useSWRMutation('/consumables/toggle', (_url: string, { arg }: { arg: string }) =>
     axiosInstance.patch(`/consumables/types/${arg}/toggle`));
+
+export const useGetRestockLog = (typeId?: string) => {
+  const query = typeId ? `?typeId=${typeId}` : '';
+  return useSWR<ConsumableRestockLogDto[]>(`/consumables/restock-log${query}`, axiosFetcher);
+};
 
 export const useIssueConsumable = () =>
   useSWRMutation('/consumables/issue', (_url: string, { arg }: { arg: {

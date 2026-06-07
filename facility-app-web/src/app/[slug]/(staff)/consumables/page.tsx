@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Box, Button, Chip, Dialog, DialogContent, DialogTitle,
-  IconButton, InputAdornment, MenuItem, Paper, Stack, Tab, Tabs,
-  TextField, Tooltip, Typography,
+  Avatar, Box, Button, Chip, Dialog, DialogContent, DialogTitle,
+  Grid, IconButton, InputAdornment, LinearProgress, MenuItem,
+  Paper, Stack, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Icon } from '@iconify/react';
@@ -295,7 +295,7 @@ export default function ConsumablesPage() {
       .reduce((s, i) => s + i.quantity, 0);
   }, [issuances]);
 
-  // Client-side search filter on issuances (type + date already filtered server-side)
+  // Client-side search filter on issuances
   const filteredIssuances = useMemo(() => {
     if (!search) return issuances;
     const q = search.toLowerCase();
@@ -355,15 +355,36 @@ export default function ConsumablesPage() {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
-      {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight={700}>Consumables</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage stock and track issuances to units
-          </Typography>
-        </Box>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: 'auto' }}>
+
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ sm: 'center' }}
+        gap={2}
+        sx={{ mb: 4 }}
+      >
+        <Stack direction="row" gap={1.5} alignItems="center">
+          <Avatar
+            variant="rounded"
+            sx={{ width: 44, height: 44, bgcolor: 'primary.lighter', borderRadius: 2 }}
+          >
+            <Icon icon="material-symbols:inventory-2-outline-rounded" width={26} color="var(--mui-palette-primary-main)" />
+          </Avatar>
+          <Box>
+            <Stack direction="row" gap={1} alignItems="center">
+              <Typography variant="h5" fontWeight={700}>Consumables</Typography>
+              {types.length > 0 && (
+                <Chip label={types.length} color="primary" variant="soft" size="small" />
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Manage stock and track issuances to units
+            </Typography>
+          </Box>
+        </Stack>
+
         <Stack direction="row" gap={1.5}>
           <Button
             variant="outlined"
@@ -383,161 +404,332 @@ export default function ConsumablesPage() {
         </Stack>
       </Stack>
 
-      {/* KPI chips */}
-      <Stack direction="row" flexWrap="wrap" gap={1.5} mb={3}>
-        <Chip icon={<Icon icon="material-symbols:inventory-2-outline-rounded" />} label={`${types.length} Types`} variant="outlined" />
-        <Chip icon={<Icon icon="material-symbols:check-circle-outline-rounded" />} label={`${activeTypes} Active`} color="success" variant="outlined" />
-        {lowStockCount > 0 && (
-          <Chip icon={<Icon icon="material-symbols:warning-outline-rounded" />} label={`${lowStockCount} Low Stock`} color="warning" variant="outlined" />
-        )}
-        <Chip icon={<Icon icon="material-symbols:output-rounded" />} label={`${issuedThisMonth} issued this month`} variant="outlined" />
-      </Stack>
-
-      {/* Tabs */}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab label="Stock" />
-        <Tab label="Issuances" />
-        <Tab label="Restock History" />
-      </Tabs>
-
-      {/* ── Stock Tab ── */}
-      {tab === 0 && (
-        <Stack spacing={2}>
-          {types.length === 0 && (
-            <Paper variant="outlined" sx={{ p: 6, textAlign: 'center' }}>
-              <Icon icon="material-symbols:inventory-2-outline-rounded" width={48} style={{ opacity: 0.3 }} />
-              <Typography color="text.secondary" mt={1}>No consumable types yet. Add one to get started.</Typography>
-              <Button sx={{ mt: 2 }} variant="contained" onClick={() => setAddTypeOpen(true)}>Add Type</Button>
+      {/* ── KPI Stat Cards ───────────────────────────────────────────────────── */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {[
+          { label: 'Total Types',       value: types.length,    color: 'primary', icon: 'material-symbols:inventory-2-outline-rounded'   },
+          { label: 'Active',            value: activeTypes,     color: 'success', icon: 'material-symbols:check-circle-outline-rounded'  },
+          { label: 'Low Stock',         value: lowStockCount,   color: 'warning', icon: 'material-symbols:warning-outline-rounded'       },
+          { label: 'Issued This Month', value: issuedThisMonth, color: 'info',    icon: 'material-symbols:output-rounded'                },
+        ].map(({ label, value, color, icon }) => (
+          <Grid key={label} size={{ xs: 6, sm: 3 }}>
+            <Paper sx={{ p: 2.5 }}>
+              <Avatar
+                variant="rounded"
+                sx={{ width: 40, height: 40, bgcolor: `${color}.lighter`, borderRadius: 1.5, mb: 1.5 }}
+              >
+                <Icon icon={icon} width={22} color={`var(--mui-palette-${color}-main)`} />
+              </Avatar>
+              <Typography variant="h5" fontWeight={700} lineHeight={1}>{value}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {label}
+              </Typography>
             </Paper>
-          )}
-          {types.map(type => {
-            const isLow = type.isActive && type.lowStockThreshold != null && type.currentStock <= type.lowStockThreshold;
-            return (
-              <Paper key={type.id} variant="outlined" sx={{ p: 2.5, opacity: type.isActive ? 1 : 0.6 }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
-                  <Box flex={1}>
-                    <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-                      <Typography fontWeight={600}>{type.name}</Typography>
-                      {!type.isActive && <Chip label="Inactive" size="small" />}
-                      {isLow && (
-                        <Chip label="Low Stock" size="small" color="warning"
-                          icon={<Icon icon="material-symbols:warning-outline-rounded" width={14} />} />
-                      )}
-                    </Stack>
-                    <Typography variant="h4" fontWeight={700} mt={0.5}>
-                      {type.currentStock}
-                      <Typography component="span" variant="body2" color="text.secondary" ml={0.5}>{type.unit}</Typography>
-                    </Typography>
-                    {type.lowStockThreshold != null && (
-                      <Typography variant="caption" color="text.secondary">
-                        Alert threshold: {type.lowStockThreshold} {type.unit}
-                      </Typography>
-                    )}
-                  </Box>
-                  <Stack direction="row" gap={1} alignItems="center">
-                    <Button
-                      size="small" variant="outlined"
-                      startIcon={<Icon icon="material-symbols:add-rounded" />}
-                      onClick={() => setRestockType(type)}
-                      disabled={!type.isActive}
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* ── Tabs + Content in Paper ──────────────────────────────────────────── */}
+      <Paper>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          sx={{
+            px: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            '& .MuiTab-root': { minHeight: 52 },
+          }}
+        >
+          <Tab
+            label="Stock"
+            icon={<Icon icon="material-symbols:inventory-2-outline-rounded" width={18} />}
+            iconPosition="start"
+            sx={{ fontSize: '0.8125rem', fontWeight: 500 }}
+          />
+          <Tab
+            label="Issuances"
+            icon={<Icon icon="material-symbols:output-rounded" width={18} />}
+            iconPosition="start"
+            sx={{ fontSize: '0.8125rem', fontWeight: 500 }}
+          />
+          <Tab
+            label="Restock History"
+            icon={<Icon icon="material-symbols:history-rounded" width={18} />}
+            iconPosition="start"
+            sx={{ fontSize: '0.8125rem', fontWeight: 500 }}
+          />
+        </Tabs>
+
+        {/* ── Stock Tab ── */}
+        {tab === 0 && (
+          <Box sx={{ p: 2.5 }}>
+            {types.length === 0 ? (
+              <Stack alignItems="center" gap={1.5} sx={{ py: 8 }}>
+                <Avatar
+                  variant="rounded"
+                  sx={{ width: 72, height: 72, bgcolor: 'background.elevation1', borderRadius: 3 }}
+                >
+                  <Icon icon="material-symbols:inventory-2-outline-rounded" width={40} style={{ opacity: 0.4 }} />
+                </Avatar>
+                <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
+                  No consumable types yet
+                </Typography>
+                <Typography variant="body2" color="text.disabled">
+                  Add a type to start tracking stock
+                </Typography>
+                <Button
+                  variant="contained"
+                  sx={{ mt: 0.5 }}
+                  startIcon={<Icon icon="material-symbols:add-rounded" />}
+                  onClick={() => setAddTypeOpen(true)}
+                >
+                  Add Type
+                </Button>
+              </Stack>
+            ) : (
+              <Stack spacing={1.5}>
+                {types.map(type => {
+                  const isLow = type.isActive && type.lowStockThreshold != null && type.currentStock <= type.lowStockThreshold;
+                  const stockColor = !type.isActive ? 'neutral' : isLow ? 'warning' : 'success';
+                  const stockPct = type.lowStockThreshold
+                    ? Math.min(100, Math.round((type.currentStock / (type.lowStockThreshold * 2)) * 100))
+                    : null;
+
+                  return (
+                    <Paper
+                      key={type.id}
+                      background={1}
+                      sx={{ p: 2.5, opacity: type.isActive ? 1 : 0.55 }}
                     >
-                      Restock
-                    </Button>
-                    <Tooltip title={type.isActive ? 'Deactivate' : 'Activate'}>
-                      <IconButton size="small" onClick={() => handleToggle(type.id)}>
-                        <Icon icon={type.isActive ? 'material-symbols:toggle-on-rounded' : 'material-symbols:toggle-off-rounded'} width={24} />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Stack>
-              </Paper>
-            );
-          })}
-        </Stack>
-      )}
+                      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
 
-      {/* ── Issuances Tab ── */}
-      {tab === 1 && (
-        <Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} flexWrap="wrap" gap={1.5} mb={2}>
-            <TextField
-              size="small"
-              placeholder="Search unit, consumable, issued by…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><Icon icon="material-symbols:search-rounded" /></InputAdornment>,
-              }}
-              sx={{ flex: 1, minWidth: 200 }}
-            />
-            <TextField
-              select size="small" label="Consumable" value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)} sx={{ minWidth: 160 }}
-            >
-              <MenuItem value="">All types</MenuItem>
-              {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
-            </TextField>
-            <TextField
-              size="small" label="From" type="date" value={fromDate}
-              onChange={e => setFromDate(e.target.value)}
-              InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
-            />
-            <TextField
-              size="small" label="To" type="date" value={toDate}
-              onChange={e => setToDate(e.target.value)}
-              InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
-            />
-            {(fromDate || toDate) && (
-              <Button size="small" onClick={() => { setFromDate(''); setToDate(''); }}>Clear dates</Button>
+                        {/* Icon */}
+                        <Avatar
+                          variant="rounded"
+                          sx={{ width: 44, height: 44, bgcolor: `${stockColor}.lighter`, borderRadius: 2, flexShrink: 0 }}
+                        >
+                          <Icon
+                            icon="material-symbols:inventory-2-outline-rounded"
+                            width={24}
+                            color={`var(--mui-palette-${stockColor}-main)`}
+                          />
+                        </Avatar>
+
+                        {/* Details */}
+                        <Box flex={1} minWidth={0}>
+                          <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" sx={{ mb: 0.5 }}>
+                            <Typography variant="subtitle2" fontWeight={700}>{type.name}</Typography>
+                            {!type.isActive && <Chip label="Inactive" size="small" color="neutral" variant="soft" />}
+                            {isLow && (
+                              <Chip
+                                label="Low Stock"
+                                size="small"
+                                color="warning"
+                                variant="soft"
+                                icon={<Icon icon="material-symbols:warning-outline-rounded" width={13} />}
+                              />
+                            )}
+                          </Stack>
+
+                          <Stack direction="row" alignItems="baseline" gap={0.75}>
+                            <Typography variant="h5" fontWeight={700} lineHeight={1}>
+                              {type.currentStock}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">{type.unit}</Typography>
+                          </Stack>
+
+                          {stockPct !== null && (
+                            <Box sx={{ mt: 1 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={stockPct}
+                                color={isLow ? 'warning' : 'success'}
+                                sx={{ height: 4, borderRadius: 2 }}
+                              />
+                              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                Alert at {type.lowStockThreshold} {type.unit}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+
+                        {/* Actions */}
+                        <Stack direction="row" gap={1} alignItems="center" sx={{ flexShrink: 0 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Icon icon="material-symbols:add-rounded" />}
+                            onClick={() => setRestockType(type)}
+                            disabled={!type.isActive}
+                          >
+                            Restock
+                          </Button>
+                          <Tooltip title={type.isActive ? 'Deactivate' : 'Activate'}>
+                            <IconButton size="small" onClick={() => handleToggle(type.id)}>
+                              <Icon
+                                icon={type.isActive ? 'material-symbols:toggle-on-rounded' : 'material-symbols:toggle-off-rounded'}
+                                width={26}
+                                color={type.isActive ? 'var(--mui-palette-success-main)' : undefined}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
             )}
-          </Stack>
+          </Box>
+        )}
 
-          <DataGrid
-            rows={filteredIssuances}
-            columns={issuanceColumns}
-            autoHeight
-            pageSizeOptions={[20, 50]}
-            initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
-            disableRowSelectionOnClick
-            sx={{ border: 0 }}
-          />
-        </Box>
-      )}
-
-      {/* ── Restock History Tab ── */}
-      {tab === 2 && (
-        <Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} mb={2}>
-            <TextField
-              size="small"
-              placeholder="Search consumable, restocked by, notes…"
-              value={restockSearch}
-              onChange={e => setRestockSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><Icon icon="material-symbols:search-rounded" /></InputAdornment>,
-              }}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              select size="small" label="Consumable" value={restockTypeFilter}
-              onChange={e => setRestockTypeFilter(e.target.value)} sx={{ minWidth: 180 }}
+        {/* ── Issuances Tab ── */}
+        {tab === 1 && (
+          <Box>
+            {/* Filter bar */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              flexWrap="wrap"
+              gap={1.5}
+              sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}
             >
-              <MenuItem value="">All types</MenuItem>
-              {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
-            </TextField>
-          </Stack>
+              <TextField
+                size="small"
+                placeholder="Search unit, consumable, issued by…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Icon icon="material-symbols:search-rounded" width={20} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: search ? (
+                    <InputAdornment position="end">
+                      <Icon
+                        icon="material-symbols:close-rounded"
+                        width={18}
+                        style={{ cursor: 'pointer', opacity: 0.6 }}
+                        onClick={() => setSearch('')}
+                      />
+                    </InputAdornment>
+                  ) : null,
+                }}
+                sx={{ flex: 1, minWidth: 200 }}
+              />
+              <TextField
+                select size="small" label="Consumable" value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value)} sx={{ minWidth: 160 }}
+              >
+                <MenuItem value="">All types</MenuItem>
+                {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+              </TextField>
+              <TextField
+                size="small" label="From" type="date" value={fromDate}
+                onChange={e => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
+              />
+              <TextField
+                size="small" label="To" type="date" value={toDate}
+                onChange={e => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }} sx={{ width: 150 }}
+              />
+              {(fromDate || toDate || search || typeFilter) && (
+                <Button
+                  size="small"
+                  onClick={() => { setSearch(''); setTypeFilter(''); setFromDate(''); setToDate(''); }}
+                >
+                  Clear
+                </Button>
+              )}
+            </Stack>
 
-          <DataGrid
-            rows={filteredRestockLogs}
-            columns={restockColumns}
-            autoHeight
-            pageSizeOptions={[20, 50]}
-            initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
-            disableRowSelectionOnClick
-            sx={{ border: 0 }}
-          />
-        </Box>
-      )}
+            {filteredIssuances.length === 0 ? (
+              <Stack alignItems="center" gap={1} sx={{ py: 8 }}>
+                <Icon icon="material-symbols:search-off-rounded" width={40} style={{ opacity: 0.35 }} />
+                <Typography variant="body2" color="text.disabled">No issuances found</Typography>
+              </Stack>
+            ) : (
+              <DataGrid
+                rows={filteredIssuances}
+                columns={issuanceColumns}
+                autoHeight
+                pageSizeOptions={[20, 50]}
+                initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
+                disableRowSelectionOnClick
+                sx={{ border: 0 }}
+              />
+            )}
+          </Box>
+        )}
+
+        {/* ── Restock History Tab ── */}
+        {tab === 2 && (
+          <Box>
+            {/* Filter bar */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              gap={1.5}
+              sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}
+            >
+              <TextField
+                size="small"
+                placeholder="Search consumable, restocked by, notes…"
+                value={restockSearch}
+                onChange={e => setRestockSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Icon icon="material-symbols:search-rounded" width={20} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: restockSearch ? (
+                    <InputAdornment position="end">
+                      <Icon
+                        icon="material-symbols:close-rounded"
+                        width={18}
+                        style={{ cursor: 'pointer', opacity: 0.6 }}
+                        onClick={() => setRestockSearch('')}
+                      />
+                    </InputAdornment>
+                  ) : null,
+                }}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                select size="small" label="Consumable" value={restockTypeFilter}
+                onChange={e => setRestockTypeFilter(e.target.value)} sx={{ minWidth: 180 }}
+              >
+                <MenuItem value="">All types</MenuItem>
+                {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+              </TextField>
+              {(restockSearch || restockTypeFilter) && (
+                <Button size="small" onClick={() => { setRestockSearch(''); setRestockTypeFilter(''); }}>
+                  Clear
+                </Button>
+              )}
+            </Stack>
+
+            {filteredRestockLogs.length === 0 ? (
+              <Stack alignItems="center" gap={1} sx={{ py: 8 }}>
+                <Icon icon="material-symbols:history-rounded" width={40} style={{ opacity: 0.35 }} />
+                <Typography variant="body2" color="text.disabled">No restock history found</Typography>
+              </Stack>
+            ) : (
+              <DataGrid
+                rows={filteredRestockLogs}
+                columns={restockColumns}
+                autoHeight
+                pageSizeOptions={[20, 50]}
+                initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
+                disableRowSelectionOnClick
+                sx={{ border: 0 }}
+              />
+            )}
+          </Box>
+        )}
+      </Paper>
 
       {/* Dialogs */}
       <IssueDialog open={issueOpen} onClose={handleDialogClose} types={types} />

@@ -24,6 +24,9 @@ export interface TenantSettings {
   smsUsername: string | null;
   smsSenderId: string | null;
   smsApiUrl: string | null;
+  // Telegram
+  telegramEnabled: boolean;
+  telegramBotToken: string | null;
   // M-Pesa
   mpesaEnabled: boolean;
   mpesaSandbox: boolean;
@@ -49,6 +52,11 @@ export interface UpdateMpesaPayload {
   consumerKey?: string | null;
   consumerSecret?: string | null;
   passkey?: string | null;
+}
+
+export interface UpdateTelegramPayload {
+  enabled: boolean;
+  botToken?: string | null;
 }
 
 export const SMS_PROVIDER_OPTIONS = [
@@ -101,4 +109,26 @@ export const useUpdateMpesa = () =>
     '/settings/mpesa',
     (_url: string, { arg }: { arg: UpdateMpesaPayload }) =>
       axiosInstance.patch('/settings/mpesa', arg),
+  );
+
+export const useUpdateTelegram = () =>
+  useSWRMutation(
+    '/settings/telegram',
+    (_url: string, { arg }: { arg: UpdateTelegramPayload }) =>
+      axiosInstance.patch('/settings/telegram', arg),
+  );
+
+export const useTelegramLinkStatus = () =>
+  useSWR<{ linked: boolean }>('/telegram/link/status', axiosFetcher);
+
+export const useTelegramGenerateLink = () =>
+  useSWRMutation(
+    '/telegram/link',
+    (_url: string) => axiosInstance.post<{ linkToken: string; expiresInMinutes: number }>('/telegram/link'),
+  );
+
+export const useTelegramUnlink = () =>
+  useSWRMutation(
+    '/telegram/link/unlink',
+    (_url: string) => axiosInstance.delete('/telegram/link'),
   );

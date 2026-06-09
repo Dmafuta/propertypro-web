@@ -29,6 +29,7 @@ import {
   useUpdateMpesa,
   useUpdateSettings,
   useUpdateSms,
+  useUpdateTelegram,
 } from 'services/swr/api-hooks/useSettingsApi';
 
 // ── Section header ────────────────────────────────────────────────────────────
@@ -738,11 +739,151 @@ const MpesaTab = () => {
   );
 };
 
+// ── Telegram tab ──────────────────────────────────────────────────────────────
+const TelegramTab = () => {
+  const { data: settings, isLoading, mutate } = useGetSettings();
+  const { trigger: save, isMutating: saving } = useUpdateTelegram();
+
+  const [enabled,  setEnabled]  = useState(false);
+  const [botToken, setBotToken] = useState('');
+  const [success,  setSuccess]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setEnabled(settings.telegramEnabled);
+      setBotToken(settings.telegramBotToken ?? '');
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    setError(null);
+    setSuccess(false);
+    try {
+      await save({ enabled, botToken: botToken || null });
+      await mutate();
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err?.data?.error ?? 'Failed to save Telegram settings.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Stack sx={{ gap: 2 }}>
+        <Skeleton variant="rounded" height={40} />
+        <Skeleton variant="rounded" height={56} />
+      </Stack>
+    );
+  }
+
+  const webhookUrl = botToken
+    ? `https://api.telegram.org/bot${botToken}/setWebhook?url=https://greatwallgardens.estate/backend/api/telegram/webhook?token=${botToken}`
+    : null;
+
+  return (
+    <Stack sx={{ gap: 4 }}>
+      <Paper sx={{ p: { xs: 3, md: 5 } }}>
+        <SectionHeader
+          icon="la:telegram"
+          title="Telegram Notifications"
+          description="Send rich HTML notifications to staff and residents via Telegram. Each user links their account by starting your bot."
+        />
+
+        <Stack sx={{ gap: 3 }}>
+          <FormControlLabel
+            control={
+              <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+            }
+            label={
+              <Stack>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Enable Telegram for this facility
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  When on, linked users will receive visit, parcel and maintenance alerts via Telegram.
+                </Typography>
+              </Stack>
+            }
+          />
+
+          <Divider />
+
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Bot Token
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Create a bot via <strong>@BotFather</strong> on Telegram, then paste your token here.
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              label="Bot Token"
+              type="password"
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              disabled={!enabled}
+              placeholder="1234567890:ABCdefGHIjklMNOpqrSTUVwxyz"
+            />
+          </Box>
+
+          {botToken && enabled && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  Webhook Setup
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  After saving, register the webhook with Telegram by opening this URL once in your browser:
+                </Typography>
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 1,
+                    bgcolor: 'background.elevation1',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                    {webhookUrl}
+                  </Typography>
+                </Box>
+              </Box>
+            </>
+          )}
+        </Stack>
+      </Paper>
+
+      {success && (
+        <Alert severity="success" onClose={() => setSuccess(false)}>
+          Telegram settings saved successfully.
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Box>
+        <Button variant="contained" loading={saving} onClick={handleSave}>
+          Save Telegram Settings
+        </Button>
+      </Box>
+    </Stack>
+  );
+};
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { label: 'General',  icon: 'material-symbols:tune-rounded'               },
   { label: 'Branding', icon: 'material-symbols:palette-outline-rounded'     },
   { label: 'SMS',      icon: 'material-symbols:sms-outline-rounded'         },
+  { label: 'Telegram', icon: 'la:telegram'                                  },
   { label: 'M-Pesa',   icon: 'material-symbols:phonelink-ring-rounded'      },
 ];
 
@@ -781,7 +922,8 @@ export default function StaffSettingsPage() {
       {tab === 0 && <GeneralTab />}
       {tab === 1 && <BrandingTab />}
       {tab === 2 && <SmsTab />}
-      {tab === 3 && <MpesaTab />}
+      {tab === 3 && <TelegramTab />}
+      {tab === 4 && <MpesaTab />}
     </Box>
   );
 }

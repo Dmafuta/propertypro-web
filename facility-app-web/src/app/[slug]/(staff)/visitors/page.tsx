@@ -390,9 +390,14 @@ export default function VisitorsPage() {
     <Box sx={{ p: { xs: 3, md: 5 } }}>
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ mb: 5, gap: 2, justifyContent: 'space-between', alignItems: { sm: 'center' } }}>
-        <Stack sx={{ gap: 0.5 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Visitors</Typography>
-          <Typography variant="body2" color="text.secondary">Live overview and visitor management</Typography>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'success.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:groups-outline-rounded" sx={{ fontSize: 28, color: 'success.main' }} />
+          </Avatar>
+          <Stack sx={{ gap: 0.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>Visitors</Typography>
+            <Typography variant="body2" color="text.secondary">Live overview and visitor management</Typography>
+          </Stack>
         </Stack>
         <Stack direction="row" sx={{ gap: 1.5 }}>
           <Button variant="outlined" startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />} onClick={() => setPreRegOpen(true)}>

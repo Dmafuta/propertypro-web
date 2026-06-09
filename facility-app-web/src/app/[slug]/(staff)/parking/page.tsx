@@ -193,7 +193,7 @@ function RegisterVehicleDialog({ open, onClose, onSaved }: { open: boolean; onCl
 
           <TextField label="Plate Number *" fullWidth size="small" value={form.plate}
             onChange={e => setForm(f => ({ ...f, plate: e.target.value.toUpperCase() }))}
-            inputProps={{ style: { textTransform: 'uppercase', letterSpacing: 2 } }} />
+            slotProps={{ htmlInput: { style: { textTransform: 'uppercase', letterSpacing: 2 } } }} />
 
           <Stack direction="row" spacing={2}>
             <TextField label="Make" fullWidth size="small" value={form.make}
@@ -256,7 +256,7 @@ function IssueTagDialog({ vehicle, open, onClose, onSaved }: { vehicle: VehicleD
           {err && <Typography color="error" variant="body2">{err}</Typography>}
           <TextField label="Expires At (optional)" type="date" size="small" fullWidth
             value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
-            InputLabelProps={{ shrink: true }} />
+            slotProps={{ inputLabel: { shrink: true } }} />
           <TextField label="Notes" size="small" fullWidth multiline rows={2}
             value={notes} onChange={e => setNotes(e.target.value)} />
         </Stack>
@@ -443,12 +443,22 @@ export default function ParkingPage() {
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Parking</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Vehicle access control — registered tags, active vehicles, entry logging and history
-          </Typography>
-        </Box>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'info.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:local-parking-rounded" sx={{ fontSize: 28, color: 'info.main' }} />
+          </Avatar>
+          <Box>
+            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Parking</Typography>
+              {active.length > 0 && (
+                <Chip label={`${active.length} Active`} color="success" variant="soft" size="small" />
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Vehicle access control — registered tags, active vehicles, entry logging and history
+            </Typography>
+          </Box>
+        </Stack>
         {tab === 1 && (
           <Button variant="contained"
             startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
@@ -509,7 +519,7 @@ export default function ParkingPage() {
                 fullWidth
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value.toUpperCase())}
-                inputProps={{ style: { letterSpacing: 2, fontWeight: 700 } }}
+                slotProps={{ htmlInput: { style: { letterSpacing: 2, fontWeight: 700 } } }}
               />
               {tagErr && <Typography color="error" variant="body2">{tagErr}</Typography>}
               {tagResult && (
@@ -556,7 +566,7 @@ export default function ParkingPage() {
                 fullWidth
                 value={visitorPlate}
                 onChange={e => setVisitorPlate(e.target.value.toUpperCase())}
-                inputProps={{ style: { letterSpacing: 2, fontWeight: 700 } }}
+                slotProps={{ htmlInput: { style: { letterSpacing: 2, fontWeight: 700 } } }}
               />
               <TextField
                 label="Notes (optional)"
@@ -610,9 +620,9 @@ export default function ParkingPage() {
           <Paper sx={{ p: 3, mb: 3 }}>
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <TextField label="From" type="date" size="small" value={from}
-                onChange={e => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} />
+                onChange={e => setFrom(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="To" type="date" size="small" value={to}
-                onChange={e => setTo(e.target.value)} InputLabelProps={{ shrink: true }} />
+                onChange={e => setTo(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
               <Button variant="contained" onClick={() => setAppliedRange({ from, to })}>Apply</Button>
               {histLoading && <CircularProgress size={20} />}
             </Stack>

@@ -8,6 +8,7 @@ import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
@@ -34,20 +35,28 @@ const STATUS_TABS = [
   { label: 'Closed',      value: 3 },
 ];
 
-const statusMeta  = (v: number) => MAINTENANCE_STATUSES.find(s => s.value === v)  ?? { label: String(v), color: 'neutral' as const };
+const statusMeta   = (v: number) => MAINTENANCE_STATUSES.find(s => s.value === v)  ?? { label: String(v), color: 'neutral' as const };
 const priorityMeta = (v: number) => MAINTENANCE_PRIORITIES.find(p => p.value === v) ?? { label: String(v), color: 'neutral' as const };
 const categoryMeta = (v: number) => MAINTENANCE_CATEGORIES.find(c => c.value === v) ?? { label: String(v), icon: 'material-symbols:build-outline-rounded' };
 
+const KPI_CARDS = [
+  { label: 'Total',       color: 'primary', icon: 'material-symbols:build-outline-rounded',          tabIdx: 0, filter: (_: MaintenanceDto) => true },
+  { label: 'Open',        color: 'warning', icon: 'material-symbols:pending-actions-outline-rounded', tabIdx: 1, filter: (r: MaintenanceDto) => r.status === 0 },
+  { label: 'In Progress', color: 'info',    icon: 'material-symbols:autorenew-rounded',               tabIdx: 2, filter: (r: MaintenanceDto) => r.status === 1 },
+  { label: 'Resolved',    color: 'success', icon: 'material-symbols:check-circle-outline-rounded',    tabIdx: 3, filter: (r: MaintenanceDto) => r.status === 2 || r.status === 3 },
+] as const;
+
 export default function MaintenancePage() {
-  const [tabIdx, setTabIdx]     = useState(0);
+  const [tabIdx, setTabIdx]   = useState(0);
   const [selected, setSelected] = useState<MaintenanceDto | null>(null);
-  const [newStatus, setNewStatus]   = useState<number>(0);
-  const [staffNote, setStaffNote]   = useState('');
-  const [saving, setSaving]         = useState(false);
+  const [newStatus, setNewStatus] = useState<number>(0);
+  const [staffNote, setStaffNote] = useState('');
+  const [saving, setSaving]     = useState(false);
 
   const statusFilter = STATUS_TABS[tabIdx].value;
-  const { data: rows = [], mutate } = useGetMaintenance(statusFilter === -1 ? undefined : statusFilter);
-  const { trigger: updateStatus } = useUpdateMaintenanceStatus();
+  const { data: rows = [], mutate }  = useGetMaintenance(statusFilter === -1 ? undefined : statusFilter);
+  const { data: allRows = [] }       = useGetMaintenance(undefined);
+  const { trigger: updateStatus }    = useUpdateMaintenanceStatus();
 
   const openDrawer = (row: MaintenanceDto) => {
     setSelected(row);
@@ -145,35 +154,84 @@ export default function MaintenancePage() {
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Maintenance</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track and manage maintenance requests from residents
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <Chip label={`${rows.filter(r => r.status === 0).length} Open`}       color="warning" variant="soft" />
-          <Chip label={`${rows.filter(r => r.status === 1).length} In Progress`} color="info"    variant="soft" />
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'warning.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:build-outline-rounded" sx={{ fontSize: 28, color: 'warning.main' }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>Maintenance</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Track and manage maintenance requests from residents
+            </Typography>
+          </Box>
         </Stack>
+        {allRows.filter(r => r.status === 0).length > 0 && (
+          <Chip
+            label={`${allRows.filter(r => r.status === 0).length} Open`}
+            color="warning"
+            variant="soft"
+            icon={<IconifyIcon icon="material-symbols:pending-actions-outline-rounded" />}
+          />
+        )}
       </Stack>
 
-      {/* Tabs */}
-      <Tabs value={tabIdx} onChange={(_, v) => setTabIdx(v)} sx={{ mb: 3 }}>
-        {STATUS_TABS.map((t, i) => (
-          <Tab key={t.label} label={t.label} value={i} />
-        ))}
-      </Tabs>
+      {/* KPI cards */}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        {KPI_CARDS.map(({ label, color, icon, tabIdx: ti, filter }) => {
+          const isActive = tabIdx === ti;
+          const count = allRows.filter(filter).length;
+          return (
+            <Grid key={label} size={{ xs: 6, md: 3 }}>
+              <Paper
+                onClick={() => setTabIdx(ti)}
+                sx={{
+                  p: 2.5, cursor: 'pointer', height: 1,
+                  border: '2px solid',
+                  borderColor: isActive ? `${color}.main` : 'transparent',
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: `${color}.light`, transform: 'translateY(-1px)', boxShadow: 3 },
+                }}
+              >
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5 }}>
+                  <Avatar variant="rounded" sx={{ width: 40, height: 40, bgcolor: `${color}.lighter`, borderRadius: 1.5 }}>
+                    <IconifyIcon icon={icon} sx={{ fontSize: 22, color: `${color}.main` }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>{count}</Typography>
+                    <Typography variant="caption" color="text.secondary">{label}</Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-      {/* Grid */}
-      <Paper sx={{ height: 520 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          disableRowSelectionOnClick
-          disableColumnMenu
-        />
+      {/* Table card */}
+      <Paper>
+        <Box sx={{ px: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Tabs value={tabIdx} onChange={(_, v) => setTabIdx(v)}>
+            {STATUS_TABS.map((t, i) => <Tab key={t.label} label={t.label} value={i} />)}
+          </Tabs>
+        </Box>
+        {rows.length === 0 ? (
+          <Stack alignItems="center" gap={2} sx={{ py: 8 }}>
+            <Avatar variant="rounded" sx={{ width: 64, height: 64, bgcolor: 'background.elevation2', borderRadius: 3 }}>
+              <IconifyIcon icon="material-symbols:build-outline-rounded" sx={{ fontSize: 36, color: 'text.disabled' }} />
+            </Avatar>
+            <Typography variant="subtitle1" color="text.secondary">No requests found</Typography>
+          </Stack>
+        ) : (
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            disableRowSelectionOnClick
+            disableColumnMenu
+            sx={{ border: 0 }}
+          />
+        )}
       </Paper>
 
       {/* Detail / Update Drawer */}
@@ -197,9 +255,9 @@ export default function MaintenancePage() {
             {/* Meta */}
             <Stack spacing={1.5}>
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                <Chip label={categoryMeta(selected.category).label}   color="primary" variant="soft" size="small" />
-                <Chip label={priorityMeta(selected.priority).label}   color={priorityMeta(selected.priority).color} variant="soft" size="small" />
-                <Chip label={statusMeta(selected.status).label}       color={statusMeta(selected.status).color}   variant="soft" size="small" />
+                <Chip label={categoryMeta(selected.category).label}  color="primary" variant="soft" size="small" />
+                <Chip label={priorityMeta(selected.priority).label}  color={priorityMeta(selected.priority).color} variant="soft" size="small" />
+                <Chip label={statusMeta(selected.status).label}      color={statusMeta(selected.status).color}   variant="soft" size="small" />
               </Stack>
 
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{selected.title}</Typography>
@@ -226,7 +284,6 @@ export default function MaintenancePage() {
 
             <Divider />
 
-            {/* Update form */}
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Update Status</Typography>
 
             <FormControl fullWidth size="small">

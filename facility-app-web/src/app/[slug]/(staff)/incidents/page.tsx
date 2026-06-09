@@ -12,6 +12,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
@@ -33,6 +34,13 @@ const severityMeta = (v: number) => INCIDENT_SEVERITIES.find(s => s.value === v)
 const statusMeta   = (v: number) => INCIDENT_STATUSES.find(s => s.value === v)    ?? { label: String(v), color: 'neutral' as const };
 
 const EMPTY = { title: '', description: '', location: '', involvedParties: '', category: 0, severity: 1 };
+
+const KPI_CARDS = [
+  { label: 'Total',        color: 'primary', icon: 'material-symbols:warning-outline-rounded',         filter: (_: IncidentDto) => true },
+  { label: 'Open',         color: 'error',   icon: 'material-symbols:report-outline-rounded',           filter: (r: IncidentDto) => r.status === 0 },
+  { label: 'Investigating',color: 'warning', icon: 'material-symbols:search-activity-rounded',          filter: (r: IncidentDto) => r.status === 1 },
+  { label: 'Resolved',     color: 'success', icon: 'material-symbols:check-circle-outline-rounded',     filter: (r: IncidentDto) => r.status === 2 },
+] as const;
 
 export default function IncidentsPage() {
   const [logOpen, setLogOpen]       = useState(false);
@@ -178,30 +186,82 @@ export default function IncidentsPage() {
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Incidents</Typography>
-          <Typography variant="body2" color="text.secondary">Log and track security, safety, and operational incidents</Typography>
-        </Box>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          {openCount > 0 && <Chip label={`${openCount} Active`} color="error" variant="soft" />}
-          <Button variant="contained" color="error"
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'error.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:report-outline-rounded" sx={{ fontSize: 28, color: 'error.main' }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>Incidents</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Log and track security, safety, and operational incidents
+            </Typography>
+          </Box>
+        </Stack>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5 }}>
+          {openCount > 0 && (
+            <Chip
+              label={`${openCount} Active`}
+              color="error"
+              variant="soft"
+              icon={<IconifyIcon icon="material-symbols:warning-outline-rounded" />}
+            />
+          )}
+          <Button
+            variant="contained"
+            color="error"
             startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
-            onClick={() => { setForm(EMPTY); setFormErr(''); setLogOpen(true); }}>
+            onClick={() => { setForm(EMPTY); setFormErr(''); setLogOpen(true); }}
+          >
             Log Incident
           </Button>
         </Stack>
       </Stack>
 
-      {/* Grid */}
-      <Paper sx={{ height: 560 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          disableRowSelectionOnClick
-          disableColumnMenu
-        />
+      {/* KPI cards */}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        {KPI_CARDS.map(({ label, color, icon, filter }) => {
+          const count = rows.filter(filter).length;
+          return (
+            <Grid key={label} size={{ xs: 6, md: 3 }}>
+              <Paper sx={{ p: 2.5, height: 1 }}>
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5 }}>
+                  <Avatar variant="rounded" sx={{ width: 40, height: 40, bgcolor: `${color}.lighter`, borderRadius: 1.5 }}>
+                    <IconifyIcon icon={icon} sx={{ fontSize: 22, color: `${color}.main` }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>{count}</Typography>
+                    <Typography variant="caption" color="text.secondary">{label}</Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      {/* Table card */}
+      <Paper>
+        {rows.length === 0 ? (
+          <Stack alignItems="center" gap={2} sx={{ py: 8 }}>
+            <Avatar variant="rounded" sx={{ width: 64, height: 64, bgcolor: 'background.elevation2', borderRadius: 3 }}>
+              <IconifyIcon icon="material-symbols:report-outline-rounded" sx={{ fontSize: 36, color: 'text.disabled' }} />
+            </Avatar>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" color="text.secondary">No incidents logged</Typography>
+              <Typography variant="body2" color="text.disabled">Use the button above to log a new incident</Typography>
+            </Box>
+          </Stack>
+        ) : (
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            disableRowSelectionOnClick
+            disableColumnMenu
+            sx={{ border: 0 }}
+          />
+        )}
       </Paper>
 
       {/* Log Incident Dialog */}

@@ -516,10 +516,20 @@ export default function HrStaffPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} mb={4}>
-        <Stack gap={0.5}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Staff Directory</Typography>
-          <Typography variant="body2" color="text.secondary">View and manage employee profiles</Typography>
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'primary.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:badge-outline-rounded" sx={{ fontSize: 28, color: 'primary.main' }} />
+          </Avatar>
+          <Stack gap={0.5}>
+            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Staff Directory</Typography>
+              {(data?.total ?? 0) > 0 && (
+                <Chip label={data?.total} color="primary" variant="soft" size="small" />
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary">View and manage employee profiles</Typography>
+          </Stack>
         </Stack>
       </Stack>
 
@@ -560,58 +570,57 @@ export default function HrStaffPage() {
         </Stack>
       )}
 
-      {/* Filters row */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} sx={{ mb: 2 }}>
-        <TextField
-          size="small"
-          placeholder="Search by name or email…"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          sx={{ flex: 1 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 20, color: 'text.secondary' }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Role</InputLabel>
-          <Select value={roleFilter} label="Role" onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}>
-            <MenuItem value=""><em>All Roles</em></MenuItem>
-            {STAFF_ROLES.map((r) => (
-              <MenuItem key={r} value={r}>
-                <Chip label={getRoleLabel(r)} color={getRoleColor(r)} variant="soft" size="small" sx={{ pointerEvents: 'none' }} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 130 }}>
-          <InputLabel>Status</InputLabel>
-          <Select value={statusFilter} label="Status" onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}>
-            <MenuItem value=""><em>All</em></MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-        {(isFiltered || dSearch) && (
-          <Button
-            variant="soft"
-            color="neutral"
+      {/* Filters + Table card */}
+      <Paper>
+        <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <TextField
             size="small"
-            onClick={() => { setRoleFilter(''); setStatusFilter(''); handleSearch(''); }}
-            startIcon={<IconifyIcon icon="material-symbols:close-rounded" />}
-          >
-            Clear
-          </Button>
-        )}
-      </Stack>
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            sx={{ flex: 1 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconifyIcon icon="material-symbols:search-rounded" sx={{ fontSize: 20, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Role</InputLabel>
+            <Select value={roleFilter} label="Role" onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}>
+              <MenuItem value=""><em>All Roles</em></MenuItem>
+              {STAFF_ROLES.map((r) => (
+                <MenuItem key={r} value={r}>
+                  <Chip label={getRoleLabel(r)} color={getRoleColor(r)} variant="soft" size="small" sx={{ pointerEvents: 'none' }} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 130 }}>
+            <InputLabel>Status</InputLabel>
+            <Select value={statusFilter} label="Status" onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}>
+              <MenuItem value=""><em>All</em></MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+          {(isFiltered || dSearch) && (
+            <Button
+              variant="soft"
+              color="neutral"
+              size="small"
+              onClick={() => { setRoleFilter(''); setStatusFilter(''); handleSearch(''); }}
+              startIcon={<IconifyIcon icon="material-symbols:close-rounded" />}
+            >
+              Clear
+            </Button>
+          )}
+        </Stack>
 
-      {/* Data table */}
-      <Paper sx={{ p: 0 }}>
         {isLoading && !isFiltered ? (
           <Stack gap={1} sx={{ p: 3 }}>
             {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} variant="rounded" height={48} />)}

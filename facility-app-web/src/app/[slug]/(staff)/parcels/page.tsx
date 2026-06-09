@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -8,8 +9,9 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
+import Drawer from '@mui/material/Drawer';
+import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
@@ -35,23 +37,29 @@ const statusMeta = (v: number) => PARCEL_STATUSES.find(s => s.value === v) ?? { 
 
 const EMPTY_FORM = { unitId: '', recipientName: '', courierName: '', description: '', notes: '' };
 
+const KPI_CARDS = [
+  { label: 'Total',     color: 'primary', icon: 'material-symbols:package-2-outline-rounded',       tabIdx: 0, filter: (_: ParcelDto) => true },
+  { label: 'Pending',   color: 'warning', icon: 'material-symbols:pending-actions-outline-rounded',  tabIdx: 1, filter: (r: ParcelDto) => r.status === 0 },
+  { label: 'Collected', color: 'success', icon: 'material-symbols:check-circle-outline-rounded',     tabIdx: 2, filter: (r: ParcelDto) => r.status === 1 },
+  { label: 'Returned',  color: 'neutral', icon: 'material-symbols:undo-rounded',                     tabIdx: 3, filter: (r: ParcelDto) => r.status === 2 },
+] as const;
+
 export default function ParcelsPage() {
-  const [tabIdx, setTabIdx]         = useState(0);
-  const [logOpen, setLogOpen]       = useState(false);
-  const [form, setForm]             = useState(EMPTY_FORM);
-  const [formErr, setFormErr]       = useState('');
-  const [selected, setSelected]     = useState<ParcelDto | null>(null);
+  const [tabIdx, setTabIdx]           = useState(0);
+  const [logOpen, setLogOpen]         = useState(false);
+  const [form, setForm]               = useState(EMPTY_FORM);
+  const [formErr, setFormErr]         = useState('');
+  const [selected, setSelected]       = useState<ParcelDto | null>(null);
   const [collectName, setCollectName] = useState('');
   const [collectOpen, setCollectOpen] = useState(false);
-  const [actionRow, setActionRow]   = useState<ParcelDto | null>(null);
+  const [actionRow, setActionRow]     = useState<ParcelDto | null>(null);
 
   const statusFilter = STATUS_TABS[tabIdx].value;
-  const { data: rows = [], mutate } = useGetParcels(statusFilter === -1 ? undefined : statusFilter);
-  const { trigger: receive, isMutating: receiving } = useReceiveParcel();
-  const { trigger: collect, isMutating: collecting } = useCollectParcel();
+  const { data: rows = [], mutate }   = useGetParcels(statusFilter === -1 ? undefined : statusFilter);
+  const { data: allRows = [] }        = useGetParcels(undefined);
+  const { trigger: receive, isMutating: receiving }   = useReceiveParcel();
+  const { trigger: collect, isMutating: collecting }  = useCollectParcel();
   const { trigger: returnParcel, isMutating: returning } = useReturnParcel();
-
-  const pending   = rows.filter(r => r.status === 0).length;
 
   const handleLog = async () => {
     if (!form.recipientName.trim()) { setFormErr('Recipient name is required.'); return; }
@@ -181,34 +189,91 @@ export default function ParcelsPage() {
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Parcels & Deliveries</Typography>
-          <Typography variant="body2" color="text.secondary">Log incoming parcels and track collection status</Typography>
-        </Box>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          {pending > 0 && <Chip label={`${pending} Pending`} color="warning" variant="soft" />}
-          <Button variant="contained" startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
-            onClick={() => { setForm(EMPTY_FORM); setFormErr(''); setLogOpen(true); }}>
-            Log Parcel
-          </Button>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 2 }}>
+          <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'primary.lighter', borderRadius: 2 }}>
+            <IconifyIcon icon="material-symbols:package-2-outline-rounded" sx={{ fontSize: 28, color: 'primary.main' }} />
+          </Avatar>
+          <Box>
+            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Parcels & Deliveries</Typography>
+              {allRows.length > 0 && (
+                <Chip label={allRows.length} color="primary" variant="soft" size="small" />
+              )}
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Log incoming parcels and track collection status
+            </Typography>
+          </Box>
         </Stack>
+        <Button
+          variant="contained"
+          startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+          onClick={() => { setForm(EMPTY_FORM); setFormErr(''); setLogOpen(true); }}
+        >
+          Log Parcel
+        </Button>
       </Stack>
 
-      {/* Tabs */}
-      <Tabs value={tabIdx} onChange={(_, v) => setTabIdx(v)} sx={{ mb: 3 }}>
-        {STATUS_TABS.map((t, i) => <Tab key={t.label} label={t.label} value={i} />)}
-      </Tabs>
+      {/* KPI cards */}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        {KPI_CARDS.map(({ label, color, icon, tabIdx: ti, filter }) => {
+          const isActive = tabIdx === ti;
+          const count = allRows.filter(filter).length;
+          return (
+            <Grid key={label} size={{ xs: 6, md: 3 }}>
+              <Paper
+                onClick={() => setTabIdx(ti)}
+                sx={{
+                  p: 2.5, cursor: 'pointer', height: 1,
+                  border: '2px solid',
+                  borderColor: isActive ? `${color}.main` : 'transparent',
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: `${color}.light`, transform: 'translateY(-1px)', boxShadow: 3 },
+                }}
+              >
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5 }}>
+                  <Avatar variant="rounded" sx={{ width: 40, height: 40, bgcolor: `${color}.lighter`, borderRadius: 1.5 }}>
+                    <IconifyIcon icon={icon} sx={{ fontSize: 22, color: `${color}.main` }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>{count}</Typography>
+                    <Typography variant="caption" color="text.secondary">{label}</Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-      {/* Grid */}
-      <Paper sx={{ height: 520 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          disableRowSelectionOnClick
-          disableColumnMenu
-        />
+      {/* Table card */}
+      <Paper>
+        <Box sx={{ px: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Tabs value={tabIdx} onChange={(_, v) => setTabIdx(v)}>
+            {STATUS_TABS.map((t, i) => <Tab key={t.label} label={t.label} value={i} />)}
+          </Tabs>
+        </Box>
+        {rows.length === 0 ? (
+          <Stack alignItems="center" gap={2} sx={{ py: 8 }}>
+            <Avatar variant="rounded" sx={{ width: 64, height: 64, bgcolor: 'background.elevation2', borderRadius: 3 }}>
+              <IconifyIcon icon="material-symbols:package-2-outline-rounded" sx={{ fontSize: 36, color: 'text.disabled' }} />
+            </Avatar>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" color="text.secondary">No parcels found</Typography>
+              <Typography variant="body2" color="text.disabled">Use the button above to log an incoming parcel</Typography>
+            </Box>
+          </Stack>
+        ) : (
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            disableRowSelectionOnClick
+            disableColumnMenu
+            sx={{ border: 0 }}
+          />
+        )}
       </Paper>
 
       {/* Log Parcel Dialog */}
